@@ -68,7 +68,7 @@ func (c *cert) newCertAndKeyFromCA(cfg *config.Config, caCert *x509.Certificate,
 		return err
 	}
 
-	return writeCertAndKey(cfg.Dir, c.BaseName, cert, key)
+	return writeCertAndKey(cfg.PKIDir, c.BaseName, cert, key)
 }
 
 // CertificateTree is represents a one-level-deep tree, mapping a CA to the certs that depend on it.
@@ -88,7 +88,7 @@ func (t certificateTree) createTree(cfg *config.Config) error {
 			return err
 		}
 
-		if err := writeCertAndKey(cfg.Dir, ca.BaseName, caCert, caKey); err != nil {
+		if err := writeCertAndKey(cfg.PKIDir, ca.BaseName, caCert, caKey); err != nil {
 			return err
 		}
 
@@ -175,7 +175,7 @@ var (
 			Usages:     []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		},
 		configMutators: []configMutatorsFunc{
-			// TODO	makeAltNamesMutator(pkiutil.GetAPIServerAltNames),
+			makeAltNamesMutator(getAPIServerAltNames),
 		},
 	}
 	// certKubeletClient is the definition of the cert used by the API server to access the kubelet.
@@ -232,7 +232,7 @@ var (
 		},
 		configMutators: []configMutatorsFunc{
 			// TODO	makeAltNamesMutator(pkiutil.GetEtcdAltNames),
-			//		setCommonNameToNodeName(),
+			setCommonNameToNodeName(),
 		},
 	}
 	// certEtcdPeer is the definition of the cert used by etcd peers to access each other.
@@ -273,20 +273,10 @@ var (
 	}
 )
 
-func makeAltNamesMutator(f func(*config.Config) (*certutil.AltNames, error)) configMutatorsFunc {
-	return func(cfg *config.Config, cc *certutil.Config) error {
-		altNames, err := f(cfg)
-		if err != nil {
-			return err
-		}
-		cc.AltNames = *altNames
-		return nil
-	}
-}
-
 func setCommonNameToNodeName() configMutatorsFunc {
 	return func(cfg *config.Config, cc *certutil.Config) error {
 		//TODO	cc.CommonName = cfg.NodeRegistration.Name
+		cc.CommonName = "etcd0"
 		return nil
 	}
 }

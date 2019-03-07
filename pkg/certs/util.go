@@ -11,14 +11,27 @@ import (
 )
 
 func writeCertAndKey(pkiPath, name string, cert *x509.Certificate, key *rsa.PrivateKey) error {
-	block := pem.Block{
+	keyBlock := pem.Block{
 		Type:  RSAPrivateKeyBlockType,
 		Bytes: x509.MarshalPKCS1PrivateKey(key),
 	}
-	data := pem.EncodeToMemory(&block)
-
+	keyData := pem.EncodeToMemory(&keyBlock)
 	keyPath := pathForPrivateKey(pkiPath, name)
-	return writeKey(keyPath, data)
+	if err := writeKey(keyPath, keyData); err != nil {
+		return err
+	}
+
+	certBlock := pem.Block{
+		Type:  CertificateBlockType,
+		Bytes: cert.Raw,
+	}
+	certData := pem.EncodeToMemory(&certBlock)
+	certPath := pathForCert(pkiPath, name)
+	if err := writeKey(certPath, certData); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func writePrivateKey(keyPath string, key *rsa.PrivateKey) error {
@@ -67,3 +80,4 @@ func pathForPrivateKey(pkiPath, name string) string {
 func pathForPublicKey(pkiPath, name string) string {
 	return filepath.Join(pkiPath, fmt.Sprintf("%s.pub", name))
 }
+

@@ -1,15 +1,24 @@
 package config
 
+import ()
+
 type Config struct {
-	PKIDir                string
-	AdvertiseAddress      string
-	ServiceClusterIPRange string
+	PKIDir           string
+	AdvertiseAddress string
+	ClusterName      string
+
+	Networking Networking
 }
 
 func NewConfig() *Config {
 	return &Config{
-		PKIDir:                   "/etc/kubernetes/pki",
-		AdvertiseAddress:      "192.168.0.218",
-		ServiceClusterIPRange: "10.0.0.1",
+		PKIDir:           "/Users/n1ce/tmp/test/pki",
+		AdvertiseAddress: "192.168.0.218",
 	}
+}
+
+type Networking struct {
+	ServiceSubnet string
+	PodSubnet     string
+	DNSDomain     string
 }
