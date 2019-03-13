@@ -5,19 +5,20 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"path/filepath"
+
+	"mobingi/ocean/pkg/ssh"
+	cmdutil "mobingi/ocean/pkg/util/cmd"
 )
 
-func writeCertAndKey(pkiPath, name string, cert *x509.Certificate, key *rsa.PrivateKey) error {
+func writeCertAndKey(c *ssh.Client, pkiPath, name string, cert *x509.Certificate, key *rsa.PrivateKey) error {
 	keyBlock := pem.Block{
 		Type:  RSAPrivateKeyBlockType,
 		Bytes: x509.MarshalPKCS1PrivateKey(key),
 	}
 	keyData := pem.EncodeToMemory(&keyBlock)
 	keyPath := pathForPrivateKey(pkiPath, name)
-	if err := writeKey(keyPath, keyData); err != nil {
+	if err := writeKey(c, keyPath, keyData); err != nil {
 		return err
 	}
 
@@ -27,24 +28,24 @@ func writeCertAndKey(pkiPath, name string, cert *x509.Certificate, key *rsa.Priv
 	}
 	certData := pem.EncodeToMemory(&certBlock)
 	certPath := pathForCert(pkiPath, name)
-	if err := writeKey(certPath, certData); err != nil {
+	if err := writeKey(c, certPath, certData); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func writePrivateKey(keyPath string, key *rsa.PrivateKey) error {
+func writePrivateKey(c *ssh.Client, keyPath string, key *rsa.PrivateKey) error {
 	block := pem.Block{
 		Type:  RSAPrivateKeyBlockType,
 		Bytes: x509.MarshalPKCS1PrivateKey(key),
 	}
 	data := pem.EncodeToMemory(&block)
 
-	return writeKey(keyPath, data)
+	return writeKey(c, keyPath, data)
 }
 
-func writePublicKey(keyPath string, key *rsa.PublicKey) error {
+func writePublicKey(c *ssh.Client, keyPath string, key *rsa.PublicKey) error {
 	der, err := x509.MarshalPKIXPublicKey(key)
 	if err != nil {
 		return err
@@ -57,16 +58,15 @@ func writePublicKey(keyPath string, key *rsa.PublicKey) error {
 
 	data := pem.EncodeToMemory(&block)
 
-	return writeKey(keyPath, data)
+	return writeKey(c, keyPath, data)
 }
 
 // writeKey writes the data to disk
-func writeKey(keyPath string, data []byte) error {
-	if err := os.MkdirAll(filepath.Dir(keyPath), os.FileMode(0755)); err != nil {
-		return err
-	}
-
-	return ioutil.WriteFile(keyPath, data, os.FileMode(0600))
+func writeKey(c *ssh.Client, keyPath string, data []byte) error {
+	cmd := cmdutil.NewWriteCmd(keyPath, string(data))
+	// TODO check output exec result, ok or false
+	_, err := c.Do(cmd)
+	return err
 }
 
 func pathForCert(pkiPath, name string) string {
@@ -80,4 +80,3 @@ func pathForPrivateKey(pkiPath, name string) string {
 func pathForPublicKey(pkiPath, name string) string {
 	return filepath.Join(pkiPath, fmt.Sprintf("%s.pub", name))
 }
-

@@ -1,14 +1,13 @@
 package main
 
 import (
-	"mobingi/ocean/pkg/certs"
+	"mobingi/ocean/app/phases"
 	"mobingi/ocean/pkg/config"
 )
 
 func main() {
 	cfg := config.NewConfig()
-	err := certs.CreatePKIAssets(cfg)
-	if err != nil {
+	if err := phases.Init(cfg); err != nil {
 		panic(err)
 	}
 }

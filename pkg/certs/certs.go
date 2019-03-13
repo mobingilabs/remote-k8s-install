@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"path/filepath"
 	"time"
 
 	"github.com/pkg/errors"
@@ -16,6 +17,8 @@ import (
 	kubeadmconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 
 	"mobingi/ocean/pkg/config"
+	"mobingi/ocean/pkg/ssh"
+	cmdutil "mobingi/ocean/pkg/util/cmd"
 )
 
 const (
@@ -31,34 +34,39 @@ const (
 
 // CreatePKIAssets will create and write to disk all PKI assets necessary to establish the control plane.
 // If the PKI assets already exists in the target folder, they are used only if evaluated equal; otherwise an error is returned.
-func CreatePKIAssets(cfg *config.Config) error {
+func CreatePKIAssets(c *ssh.Client, cfg *config.Config) error {
+	err := mkDirall(c, cfg)
+	if err != nil {
+		return err
+	}
+
 	certTree, err := getDefaultCertList().asMap().certTree()
 	if err != nil {
 		return err
 	}
-	if err := certTree.createTree(cfg); err != nil {
+	if err := certTree.createTree(c, cfg); err != nil {
 		return errors.Wrap(err, "error creating PKI assets")
 	}
 
 	// Service accounts are not x509 certs, so handled separately
-	return createServiceAccountKeyAndPublicKeyFiles(cfg.PKIDir)
+	return createServiceAccountKeyAndPublicKeyFiles(c, cfg.PKIDir)
 }
 
 // CreateServiceAccountKeyAndPublicKeyFiles create a new public/private key files for signing service account users.
 // If the sa public/private key files already exists in the target folder, they are used only if evaluated equals; otherwise an error is returned.
-func createServiceAccountKeyAndPublicKeyFiles(certsDir string) error {
+func createServiceAccountKeyAndPublicKeyFiles(c *ssh.Client, certsDir string) error {
 	privateKey, err := newPrivateKey()
 	if err != nil {
 		return err
 	}
 
 	privateKeyPath := pathForPrivateKey(certsDir, kubeadmconstants.ServiceAccountKeyBaseName)
-	if err := writePrivateKey(privateKeyPath, privateKey); err != nil {
+	if err := writePrivateKey(c, privateKeyPath, privateKey); err != nil {
 		return err
 	}
 
 	publicKeyPath := pathForPublicKey(certsDir, kubeadmconstants.ServiceAccountKeyBaseName)
-	return writePublicKey(publicKeyPath, &privateKey.PublicKey)
+	return writePublicKey(c, publicKeyPath, &privateKey.PublicKey)
 }
 
 func newPrivateKey() (*rsa.PrivateKey, error) {
@@ -126,4 +134,15 @@ func createCertTmpl(certSpec *certutil.Config, notBefore time.Time) (*x509.Certi
 		KeyUsage:     x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:  certSpec.Usages,
 	}, nil
+}
+
+func mkDirall(c *ssh.Client, cfg *config.Config) error {
+	dir := filepath.Join(cfg.PKIDir, "etcd")
+	cmd := cmdutil.NewMkdirAllCmd(dir)
+	_, err := c.Do(cmd)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

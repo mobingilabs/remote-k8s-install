@@ -9,13 +9,15 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"math"
 	"math/big"
 	"path/filepath"
 	"time"
 
 	certutil "k8s.io/client-go/util/cert"
+
+	"mobingi/ocean/pkg/ssh"
+	cmdutil "mobingi/ocean/pkg/util/cmd"
 )
 
 const (
@@ -29,21 +31,28 @@ const (
 	duration365d = time.Hour * 24 * 365
 )
 
-func TryLoadCertAndKeyFromDisk(pkiPath, name string) (*x509.Certificate, *rsa.PrivateKey, error) {
-	cert, err := tryLoadCertFromDisk(pkiPath, name)
+// TryLoadCertAndKeyFromDisk get cert and key from remote server
+func TryLoadCertAndKeyFromDisk(c *ssh.Client, pkiPath, name string) (*x509.Certificate, *rsa.PrivateKey, error) {
+	cert, err := tryLoadCertFromDisk(c, pkiPath, name)
 	if err != nil {
 		return nil, nil, err
 	}
-	key, err := tryLoadKeyFromDisk(pkiPath, name)
+	key, err := tryLoadKeyFromDisk(c, pkiPath, name)
 	if err != nil {
 		return nil, nil, err
 	}
 	return cert, key, nil
 }
 
-func tryLoadCertFromDisk(pkiPath, name string) (*x509.Certificate, error) {
+// TODO change name
+func tryLoadCertFromDisk(c *ssh.Client, pkiPath, name string) (*x509.Certificate, error) {
 	certPath := pathForCert(pkiPath, name)
-	certs, err := certutil.CertsFromFile(certPath)
+	cmd := cmdutil.NewReadCmd(certPath)
+	content, err := c.Do(cmd)
+	if err != nil {
+		return nil, err
+	}
+	certs, err := certutil.ParseCertsPEM([]byte(content))
 	if err != nil {
 		return nil, err
 	}
@@ -51,14 +60,15 @@ func tryLoadCertFromDisk(pkiPath, name string) (*x509.Certificate, error) {
 	return certs[0], nil
 }
 
-func tryLoadKeyFromDisk(pkiPath, name string) (*rsa.PrivateKey, error) {
+func tryLoadKeyFromDisk(c *ssh.Client, pkiPath, name string) (*rsa.PrivateKey, error) {
 	keyPath := pathForKey(pkiPath, name)
-	data, err := ioutil.ReadFile(keyPath)
+	cmd := cmdutil.NewReadCmd(keyPath)
+	content, err := c.Do(cmd)
 	if err != nil {
 		return nil, err
 	}
 
-	key, err := parsePrivateKeyPEM(data)
+	key, err := parsePrivateKeyPEM([]byte(content))
 	if err != nil {
 		return nil, err
 	}
@@ -94,12 +104,12 @@ func parsePrivateKeyPEM(data []byte) (*rsa.PrivateKey, error) {
 func NewCertAndKeyFromCA(caCert *x509.Certificate, caKey *rsa.PrivateKey, certSpec *certutil.Config) (*x509.Certificate, *rsa.PrivateKey, error) {
 	key, err := NewPrivateKey()
 	if err != nil {
-		return nil, nil,err
+		return nil, nil, err
 	}
 
 	cert, err := NewSignedCert(certSpec, key, caCert, caKey)
 	if err != nil {
-		return nil, nil,err
+		return nil, nil, err
 	}
 
 	return cert, key, nil

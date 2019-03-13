@@ -3,6 +3,7 @@ package kubeconfig
 import (
 	"crypto/rsa"
 	"crypto/x509"
+	"fmt"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -13,8 +14,10 @@ import (
 	kubeadmconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 
 	"mobingi/ocean/pkg/config"
+	"mobingi/ocean/pkg/ssh"
+	cmdutil "mobingi/ocean/pkg/util/cmd"
 	kubeconfigutil "mobingi/ocean/pkg/util/kubeconfig"
-	"mobingi/ocean/pkg/util/pki"
+	pkiutil "mobingi/ocean/pkg/util/pki"
 )
 
 type kubeconfigSpec struct {
@@ -29,8 +32,15 @@ type clientCertAuth struct {
 	Organizations []string
 }
 
-func CreateKubeconfigFiles(cfg *config.Config) error {
-	specs, err := getKubeconfigSpecs(cfg)
+func CreateKubeconfigFiles(c *ssh.Client, cfg *config.Config) error {
+	specs, err := getKubeconfigSpecs(c, cfg)
+	if err != nil {
+		return err
+	}
+
+	//TODO other location just mkdir all once
+	cmd := cmdutil.NewMkdirAllCmd(cfg.WorkDir)
+	_, err = c.Do(cmd)
 	if err != nil {
 		return err
 	}
@@ -52,22 +62,21 @@ func CreateKubeconfigFiles(cfg *config.Config) error {
 			return err
 		}
 
-		if err := writeKubeconfigFile(cfg.PKIDir, kubeconfigFileName, config); err != nil {
-			return err
+		if err := writeKubeconfigFile(c, cfg.WorkDir, kubeconfigFileName, config); err != nil {
+			return errors.Wrap(err, "kubeconfig")
 		}
 	}
 
 	return nil
 }
 
-func getKubeconfigSpecs(cfg *config.Config) (map[string]*kubeconfigSpec, error) {
-	caCert, caKey, err := pki.TryLoadCertAndKeyFromDisk(cfg.PKIDir, kubeadmconstants.CACertAndKeyBaseName)
+func getKubeconfigSpecs(c *ssh.Client, cfg *config.Config) (map[string]*kubeconfigSpec, error) {
+	caCert, caKey, err := pkiutil.TryLoadCertAndKeyFromDisk(c, cfg.PKIDir, kubeadmconstants.CACertAndKeyBaseName)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO read it from config
-	masterEndpoint := "https://192.168.0.218:6443"
+	masterEndpoint := fmt.Sprintf("https://%s:6443", cfg.AdvertiseAddress)
 
 	var kubeconfigSepcs = map[string]*kubeconfigSpec{
 		kubeadmconstants.AdminKubeConfigFileName: {
@@ -106,7 +115,7 @@ func buildKubeconfigFromSpec(spec *kubeconfigSpec, clusterName string) (*clientc
 		Organization: spec.ClientCertAuth.Organizations,
 		Usages:       []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 	}
-	clientCert, clientKey, err := pki.NewCertAndKeyFromCA(spec.CACert, spec.ClientCertAuth.CAKey, &clientCertConfig)
+	clientCert, clientKey, err := pkiutil.NewCertAndKeyFromCA(spec.CACert, spec.ClientCertAuth.CAKey, &clientCertConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -115,15 +124,27 @@ func buildKubeconfigFromSpec(spec *kubeconfigSpec, clusterName string) (*clientc
 		spec.APIServer,
 		clusterName,
 		spec.ClientName,
-		pki.EncodeCertPEM(spec.CACert),
-		pki.EncodePrivateKeyPEM(clientKey),
-		pki.EncodeCertPEM(clientCert),
+		pkiutil.EncodeCertPEM(spec.CACert),
+		pkiutil.EncodePrivateKeyPEM(clientKey),
+		pkiutil.EncodeCertPEM(clientCert),
 	), nil
 
 	return nil, nil
 }
 
-func writeKubeconfigFile(dir, name string, cfg *clientcmdapi.Config) error {
-	kubeconfigFilepath := filepath.Join(dir, name)
-	return clientcmd.WriteToFile(*cfg, kubeconfigFilepath)
+func writeKubeconfigFile(c *ssh.Client, dir, name string, cfg *clientcmdapi.Config) error {
+	content, err := clientcmd.Write(*cfg)
+	if err != nil {
+		return err
+	}
+
+	filename := filepath.Join(dir, name)
+
+	cmd := cmdutil.NewWriteCmd(filename, string(content))
+	_, err = c.Do(cmd)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

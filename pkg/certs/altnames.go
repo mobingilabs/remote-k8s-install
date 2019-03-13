@@ -56,3 +56,20 @@ func getAPIServerAltNames(cfg *config.Config) (*certutil.AltNames, error) {
 
 	return altNames, nil
 }
+
+func getEtcdAltNames(cfg *config.Config) (*certutil.AltNames, error) {
+	advertiseAddress := net.ParseIP(cfg.AdvertiseAddress)
+	if advertiseAddress == nil {
+		return nil, errors.New("must have advertiseAddress")
+	}
+
+	altNames := &certutil.AltNames{
+		IPs: []net.IP{
+			advertiseAddress,
+		},
+	}
+
+	//TODO fix up
+
+	return altNames, nil
+}

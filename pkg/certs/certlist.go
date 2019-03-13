@@ -26,6 +26,7 @@ import (
 	kubeadmconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 
 	"mobingi/ocean/pkg/config"
+	"mobingi/ocean/pkg/ssh"
 )
 
 type configMutatorsFunc func(*config.Config, *certutil.Config) error
@@ -52,7 +53,7 @@ func (c *cert) getConfig(cfg *config.Config) (*certutil.Config, error) {
 	return &c.config, nil
 }
 
-func (c *cert) newCertAndKeyFromCA(cfg *config.Config, caCert *x509.Certificate, caKey *rsa.PrivateKey) error {
+func (c *cert) newCertAndKeyFromCA(sshC *ssh.Client, cfg *config.Config, caCert *x509.Certificate, caKey *rsa.PrivateKey) error {
 	certSpec, err := c.getConfig(cfg)
 	if err != nil {
 		return err
@@ -68,7 +69,7 @@ func (c *cert) newCertAndKeyFromCA(cfg *config.Config, caCert *x509.Certificate,
 		return err
 	}
 
-	return writeCertAndKey(cfg.PKIDir, c.BaseName, cert, key)
+	return writeCertAndKey(sshC, cfg.PKIDir, c.BaseName, cert, key)
 }
 
 // CertificateTree is represents a one-level-deep tree, mapping a CA to the certs that depend on it.
@@ -76,7 +77,7 @@ type ceretificates []*cert
 type certificateTree map[*cert]certificates
 
 // CreateTree creates the CAs, certs signed by the CAs, and writes them all to disk.
-func (t certificateTree) createTree(cfg *config.Config) error {
+func (t certificateTree) createTree(c *ssh.Client, cfg *config.Config) error {
 	for ca, leaves := range t {
 		certSpec, err := ca.getConfig(cfg)
 		if err != nil {
@@ -88,12 +89,12 @@ func (t certificateTree) createTree(cfg *config.Config) error {
 			return err
 		}
 
-		if err := writeCertAndKey(cfg.PKIDir, ca.BaseName, caCert, caKey); err != nil {
+		if err := writeCertAndKey(c, cfg.PKIDir, ca.BaseName, caCert, caKey); err != nil {
 			return err
 		}
 
 		for _, leaf := range leaves {
-			if err := leaf.newCertAndKeyFromCA(cfg, caCert, caKey); err != nil {
+			if err := leaf.newCertAndKeyFromCA(c, cfg, caCert, caKey); err != nil {
 				return err
 			}
 		}
@@ -150,6 +151,7 @@ func getDefaultCertList() certificates {
 		// etcd certs
 		&certEtcdCA,
 		&certEtcdServer,
+		&certEtcdPeer,
 		// TODO fix NOW is not need		&CertEtcdPeer,
 		&certEtcdHealthcheck,
 		&certEtcdAPIClient,
@@ -236,7 +238,6 @@ var (
 		},
 	}
 	// certEtcdPeer is the definition of the cert used by etcd peers to access each other.
-	/* TODO standalone etcd is not need this
 	certEtcdPeer = cert{
 		Name:     "etcd-peer",
 		BaseName: kubeadmconstants.EtcdPeerCertAndKeyBaseName,
@@ -245,10 +246,10 @@ var (
 			Usages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 		},
 		configMutators: []configMutatorsFunc{
-			makeAltNamesMutator(pkiutil.GetEtcdPeerAltNames),
+			//		makeAltNamesMutator(pkiutil.GetEtcdPeerAltNames),
 			setCommonNameToNodeName(),
 		},
-	}*/
+	}
 	// certEtcdHealthcheck is the definition of the cert used by Kubernetes to check the health of the etcd server.
 	certEtcdHealthcheck = cert{
 		Name:     "etcd-healthcheck-client",
@@ -270,6 +271,9 @@ var (
 			Organization: []string{kubeadmconstants.MastersGroup},
 			Usages:       []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 		},
+		configMutators: []configMutatorsFunc{
+			makeAltNamesMutator(getEtcdAltNames),
+		},
 	}
 )
 
@@ -279,4 +283,5 @@ func setCommonNameToNodeName() configMutatorsFunc {
 		cc.CommonName = "etcd0"
 		return nil
 	}
+
 }
