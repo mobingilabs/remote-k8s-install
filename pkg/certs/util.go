@@ -9,6 +9,7 @@ import (
 
 	"mobingi/ocean/pkg/ssh"
 	cmdutil "mobingi/ocean/pkg/util/cmd"
+	"mobingi/ocean/pkg/tools/cache"
 )
 
 func writeCertAndKey(c *ssh.Client, pkiPath, name string, cert *x509.Certificate, key *rsa.PrivateKey) error {
@@ -63,6 +64,7 @@ func writePublicKey(c *ssh.Client, keyPath string, key *rsa.PublicKey) error {
 
 // writeKey writes the data to disk
 func writeKey(c *ssh.Client, keyPath string, data []byte) error {
+	cache.Put(keyPath, data)
 	cmd := cmdutil.NewWriteCmd(keyPath, string(data))
 	// TODO check output exec result, ok or false
 	_, err := c.Do(cmd)

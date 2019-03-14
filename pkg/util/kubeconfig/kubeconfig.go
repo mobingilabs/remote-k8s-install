@@ -38,3 +38,12 @@ func CreateWithCerts(serverURL, clusterName, userName string, caCert []byte, cli
 	}
 	return config
 }
+
+// CreateWithToken creates a KubeConfig object with access to the API server with a token
+func CreateWithToken(serverURL, clusterName, userName string, caCert []byte, token string) *clientcmdapi.Config {
+	config := CreateBasic(serverURL, clusterName, userName, caCert)
+	config.AuthInfos[userName] = &clientcmdapi.AuthInfo{
+		Token: token,
+	}
+	return config
+}

@@ -15,6 +15,7 @@ import (
 
 	"mobingi/ocean/pkg/config"
 	"mobingi/ocean/pkg/ssh"
+	"mobingi/ocean/pkg/tools/cache"
 	cmdutil "mobingi/ocean/pkg/util/cmd"
 	kubeconfigutil "mobingi/ocean/pkg/util/kubeconfig"
 	pkiutil "mobingi/ocean/pkg/util/pki"
@@ -71,6 +72,7 @@ func CreateKubeconfigFiles(c *ssh.Client, cfg *config.Config) error {
 }
 
 func getKubeconfigSpecs(c *ssh.Client, cfg *config.Config) (map[string]*kubeconfigSpec, error) {
+	// TODO load from cache
 	caCert, caKey, err := pkiutil.TryLoadCertAndKeyFromDisk(c, cfg.PKIDir, kubeadmconstants.CACertAndKeyBaseName)
 	if err != nil {
 		return nil, err
@@ -139,6 +141,7 @@ func writeKubeconfigFile(c *ssh.Client, dir, name string, cfg *clientcmdapi.Conf
 	}
 
 	filename := filepath.Join(dir, name)
+	cache.Put(name, content)
 
 	cmd := cmdutil.NewWriteCmd(filename, string(content))
 	_, err = c.Do(cmd)

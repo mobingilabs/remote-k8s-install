@@ -12,20 +12,6 @@ import (
 	bootstraputil "k8s.io/cluster-bootstrap/token/util"
 )
 
-func NewBootstrapTokenToApiserver(client clientset.Interface) (string, error) {
-	bt, err := NewBootstrapToken()
-	if err != nil {
-		return "", err
-	}
-
-	secret := bt.ToSecret()
-	if err := CreateSecret(client, secret); err != nil {
-		return "", err
-	}
-
-	return bt.Token.String(), nil
-}
-
 // BootstrapToken describes one bootstrap token, stored as a Secret in the cluster
 // TODO: The BootstrapToken object should move out to either k8s.io/client-go or k8s.io/api in the future
 // (probably as part of Bootstrap Tokens going GA). It should not be staged under the kubeadm API as it is now.

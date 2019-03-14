@@ -60,6 +60,17 @@ func (c *Config) GetMasterMachine() *Machine {
 	return nil
 }
 
+// TODO more than one machine get
+func (c *Config) GetNodeMachine() *Machine {
+	for _, v := range c.Machines {
+		if v.Role == NodeRole {
+			return &v
+		}
+	}
+
+	return nil
+}
+
 type Networking struct {
 	ServiceSubnet string
 	PodSubnet     string

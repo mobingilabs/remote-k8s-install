@@ -1,55 +1,58 @@
-/*
-Copyright 2017 The Kubernetes Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package bootstrap
 
 import (
-	"fmt"
-
 	rbac "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apiserver/pkg/authentication/user"
 	clientset "k8s.io/client-go/kubernetes"
-	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
-	"k8s.io/kubernetes/cmd/kubeadm/app/util/apiclient"
+	bootstrapapi "k8s.io/cluster-bootstrap/token/api"
+	rbacv1 "k8s.io/kubernetes/pkg/apis/rbac/v1"
+
+	"mobingi/ocean/pkg/constants"
 )
 
-const (
-	// NodeBootstrapperClusterRoleName defines the name of the auto-bootstrapped ClusterRole for letting someone post a CSR
-	// TODO: This value should be defined in an other, generic authz package instead of here
-	NodeBootstrapperClusterRoleName = "system:node-bootstrapper"
-	// NodeKubeletBootstrap defines the name of the ClusterRoleBinding that lets kubelets post CSRs
-	NodeKubeletBootstrap = "kubeadm:kubelet-bootstrap"
+// CreateClusterInfoRBACRules creates the RBAC rules for exposing the cluster-info ConfigMap in the kube-public namespace to unauthenticated users
+func CreateClusterInfoRBACRules(client clientset.Interface) error {
+	role := &rbac.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      BootstrapSignerClusterRoleName,
+			Namespace: metav1.NamespacePublic,
+		},
+		Rules: []rbac.PolicyRule{
+			rbacv1.NewRule("get").Groups("").Resources("configmaps").Names(bootstrapapi.ConfigMapClusterInfo).RuleOrDie(),
+		},
+	}
+	if _, err := client.RbacV1().Roles(role.ObjectMeta.Namespace).Create(role); err != nil {
+		return err
+	}
 
-	// CSRAutoApprovalClusterRoleName defines the name of the auto-bootstrapped ClusterRole for making the csrapprover controller auto-approve the CSR
-	// TODO: This value should be defined in an other, generic authz package instead of here
-	// Starting from v1.8, CSRAutoApprovalClusterRoleName is automatically created by the API server on startup
-	CSRAutoApprovalClusterRoleName = "system:certificates.k8s.io:certificatesigningrequests:nodeclient"
-	// NodeSelfCSRAutoApprovalClusterRoleName is a role defined in default 1.8 RBAC policies for automatic CSR approvals for automatically rotated node certificates
-	NodeSelfCSRAutoApprovalClusterRoleName = "system:certificates.k8s.io:certificatesigningrequests:selfnodeclient"
-	// NodeAutoApproveBootstrapClusterRoleBinding defines the name of the ClusterRoleBinding that makes the csrapprover approve node CSRs
-	NodeAutoApproveBootstrapClusterRoleBinding = "kubeadm:node-autoapprove-bootstrap"
-	// NodeAutoApproveCertificateRotationClusterRoleBinding defines name of the ClusterRoleBinding that makes the csrapprover approve node auto rotated CSRs
-	NodeAutoApproveCertificateRotationClusterRoleBinding = "kubeadm:node-autoapprove-certificate-rotation"
-)
+	roleBinding := &rbac.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      BootstrapSignerClusterRoleName,
+			Namespace: metav1.NamespacePublic,
+		},
+		RoleRef: rbac.RoleRef{
+			APIGroup: rbac.GroupName,
+			Kind:     "Role",
+			Name:     BootstrapSignerClusterRoleName,
+		},
+		Subjects: []rbac.Subject{
+			{
+				Kind: rbac.UserKind,
+				Name: user.Anonymous,
+			},
+		},
+	}
+	if _, err := client.RbacV1().RoleBindings(roleBinding.ObjectMeta.Namespace).Create(roleBinding); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 // AllowBootstrapTokensToPostCSRs creates RBAC rules in a way the makes Node Bootstrap Tokens able to post CSRs
 func AllowBootstrapTokensToPostCSRs(client clientset.Interface) error {
-	fmt.Println("[bootstrap-token] configured RBAC rules to allow Node Bootstrap tokens to post CSRs in order for nodes to get long term certificate credentials")
-
-	return apiclient.CreateOrUpdateClusterRoleBinding(client, &rbac.ClusterRoleBinding{
+	roleBinding := &rbac.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: NodeKubeletBootstrap,
 		},
@@ -64,15 +67,17 @@ func AllowBootstrapTokensToPostCSRs(client clientset.Interface) error {
 				Name: constants.NodeBootstrapTokenAuthGroup,
 			},
 		},
-	})
+	}
+	if _, err := client.RbacV1().RoleBindings(roleBinding.ObjectMeta.Namespace).Create(roleBinding); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // AutoApproveNodeBootstrapTokens creates RBAC rules in a way that makes Node Bootstrap Tokens' CSR auto-approved by the csrapprover controller
 func AutoApproveNodeBootstrapTokens(client clientset.Interface) error {
-	fmt.Println("[bootstrap-token] configured RBAC rules to allow the csrapprover controller automatically approve CSRs from a Node Bootstrap Token")
-
-	// Always create this kubeadm-specific binding though
-	return apiclient.CreateOrUpdateClusterRoleBinding(client, &rbac.ClusterRoleBinding{
+	roleBinding := &rbac.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: NodeAutoApproveBootstrapClusterRoleBinding,
 		},
@@ -87,14 +92,17 @@ func AutoApproveNodeBootstrapTokens(client clientset.Interface) error {
 				Name: constants.NodeBootstrapTokenAuthGroup,
 			},
 		},
-	})
+	}
+	if _, err := client.RbacV1().RoleBindings(roleBinding.ObjectMeta.Namespace).Create(roleBinding); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // AutoApproveNodeCertificateRotation creates RBAC rules in a way that makes Node certificate rotation CSR auto-approved by the csrapprover controller
 func AutoApproveNodeCertificateRotation(client clientset.Interface) error {
-	fmt.Println("[bootstrap-token] configured RBAC rules to allow certificate rotation for all node client certificates in the cluster")
-
-	return apiclient.CreateOrUpdateClusterRoleBinding(client, &rbac.ClusterRoleBinding{
+	roleBinding := &rbac.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: NodeAutoApproveCertificateRotationClusterRoleBinding,
 		},
@@ -109,5 +117,10 @@ func AutoApproveNodeCertificateRotation(client clientset.Interface) error {
 				Name: constants.NodesGroup,
 			},
 		},
-	})
+	}
+	if err := client.RbacV1().RoleBindings(roleBinding.ObjectMeta.Namespace).Create(roleBinding); err != nil {
+		return err
+	}
+
+	return nil
 }
