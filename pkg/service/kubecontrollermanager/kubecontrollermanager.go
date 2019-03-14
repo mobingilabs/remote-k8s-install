@@ -14,7 +14,11 @@ func Start(c *ssh.Client, cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
-	return writeServiceFile(c, string(serviceData))
+	if err := writeServiceFile(c, string(serviceData)); err != nil {
+		return err
+	}
+
+	return startService(c)
 }
 
 func getServiceFile(cfg *config.Config) ([]byte, error) {
@@ -37,6 +41,13 @@ func writeServiceFile(c *ssh.Client, serviceData string) error {
 	if err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func startService(c *ssh.Client) error {
+	cmd := cmdutil.NewSystemStartCmd(constants.KubeControllerManagerService)
+	c.Do(cmd)
 
 	return nil
 }

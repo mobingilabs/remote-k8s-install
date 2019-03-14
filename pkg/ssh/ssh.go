@@ -1,6 +1,9 @@
 package ssh
 
 import (
+	"strings"
+	"time"
+
 	stdssh "golang.org/x/crypto/ssh"
 )
 
@@ -28,6 +31,7 @@ func NewClient(addr, user, password string) (*Client, error) {
 }
 
 // Do exec cmd on the romote machine and return std output
+// TODO some cmd don't need stdout,some need. split it to two func
 func (c *Client) Do(cmd string) (string, error) {
 	sess, err := c.conn.NewSession()
 	if err != nil {
@@ -38,6 +42,10 @@ func (c *Client) Do(cmd string) (string, error) {
 	output, err := sess.Output(cmd)
 	if err != nil {
 		return "", err
+	}
+
+	if strings.HasPrefix(cmd, "systemctl") {
+		time.Sleep(30 * time.Second)
 	}
 
 	return string(output), nil

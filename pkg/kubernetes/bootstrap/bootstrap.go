@@ -26,9 +26,6 @@ func Bootstrap(client clientset.Interface, cfg *config.Config) error {
 		return err
 	}
 
-	if err := CreateClusterInfoRBACRules(client); err != nil {
-		return err
-	}
 
 	if err := AllowBootstrapTokensToPostCSRs(client); err != nil {
 		return err

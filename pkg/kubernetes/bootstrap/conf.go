@@ -12,6 +12,7 @@ import (
 	kubeconfigutil "mobingi/ocean/pkg/util/kubeconfig"
 )
 
+// BuildBootstrapKubeletConf push the bootstrap-kubelet.conf to cache
 func BuildBootstrapKubeletConf(cfg *config.Config, token string) error {
 	masterEndpoint := fmt.Sprintf("https://%s:6443", cfg.AdvertiseAddress)
 	caCert, exists := cache.Get("ca.crt")
@@ -26,7 +27,8 @@ func BuildBootstrapKubeletConf(cfg *config.Config, token string) error {
 		return err
 	}
 
-	cache.Put("bootstrp-kubelet.conf", content)
+	cache.Put("bootstrap-kubelet.conf", content)
+	fmt.Println(string(content))
 
 	return nil
 }

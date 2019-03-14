@@ -45,7 +45,7 @@ func Init(cfg *config.Config) error {
 		return err
 	}
 
-	err := bootstrap.Bootstrap(k8sClient, cfg)
+	err = bootstrap.Bootstrap(k8sClient, cfg)
 	if err != nil {
 		return err
 	}
