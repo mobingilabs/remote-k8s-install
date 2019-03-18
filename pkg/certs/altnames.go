@@ -66,6 +66,7 @@ func getEtcdAltNames(cfg *config.Config) (*certutil.AltNames, error) {
 	altNames := &certutil.AltNames{
 		IPs: []net.IP{
 			advertiseAddress,
+			net.ParseIP("0.0.0.0"),
 		},
 	}
 

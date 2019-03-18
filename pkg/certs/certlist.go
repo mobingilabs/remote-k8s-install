@@ -152,7 +152,6 @@ func getDefaultCertList() certificates {
 		&certEtcdCA,
 		&certEtcdServer,
 		&certEtcdPeer,
-		// TODO fix NOW is not need		&CertEtcdPeer,
 		&certEtcdHealthcheck,
 		&certEtcdAPIClient,
 	}
@@ -271,9 +270,10 @@ var (
 			Organization: []string{kubeadmconstants.MastersGroup},
 			Usages:       []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 		},
-		configMutators: []configMutatorsFunc{
-			makeAltNamesMutator(getEtcdAltNames),
-		},
+		/*
+			configMutators: []configMutatorsFunc{
+				makeAltNamesMutator(getEtcdAltNames),
+			},*/
 	}
 )
 
