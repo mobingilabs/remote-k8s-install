@@ -44,11 +44,20 @@ func (c *Client) Do(cmd string) (string, error) {
 		return "", err
 	}
 
+	return string(output), nil
+}
+
+func (c *Client) DoWithoutOutput(cmd string) error {
+	sess, err := c.conn.NewSession()
+	if err != nil {
+		return err
+	}
+	defer sess.Close()
 	if strings.HasPrefix(cmd, "systemctl") {
 		time.Sleep(30 * time.Second)
 	}
 
-	return string(output), nil
+	return sess.Run(cmd)
 }
 
 func (c *Client) Close() error {

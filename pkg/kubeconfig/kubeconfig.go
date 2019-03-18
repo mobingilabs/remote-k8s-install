@@ -78,6 +78,7 @@ func getKubeconfigSpecs(c *ssh.Client, cfg *config.Config) (map[string]*kubeconf
 		return nil, err
 	}
 
+	// TODO port from config
 	masterEndpoint := fmt.Sprintf("https://%s:6443", cfg.AdvertiseAddress)
 
 	var kubeconfigSepcs = map[string]*kubeconfigSpec{

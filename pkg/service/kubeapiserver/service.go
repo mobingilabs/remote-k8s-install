@@ -32,7 +32,7 @@ ExecStart=/usr/local/bin/kube-apiserver \
   --secure-port=6443 \
   --service-account-key-file=/etc/kubernetes/pki/sa.pub \
   --tls-cert-file=/etc/kubernetes/pki/apiserver.crt \
-  --tls-private-key-file=/etc/kubernetes/pki/apiserver.key \
+  --tls-private-key-file=/etc/kubernetes/pki/apiserver.key 
 Restart=on-failure
 RestartSec=5
 
@@ -45,8 +45,7 @@ type templateData struct {
 }
 
 func newTemplateData(cfg *config.Config) *templateData {
-	masterMachine := cfg.GetMasterMachine()
 	return &templateData{
-		IP: masterMachine.Addr,
+		IP: cfg.Masters[0].Addr,
 	}
 }

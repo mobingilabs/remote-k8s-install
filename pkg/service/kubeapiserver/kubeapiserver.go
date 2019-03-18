@@ -48,7 +48,7 @@ func writeServiceFile(c *ssh.Client, serviceData string) error {
 
 func startService(c *ssh.Client) error {
 	cmd := cmdutil.NewSystemStartCmd(constants.KubeApiserverService)
-	c.Do(cmd)
+	c.DoWithoutOutput(cmd)
 
 	return nil
 }

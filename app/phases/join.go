@@ -6,8 +6,7 @@ import (
 )
 
 func Join(cfg *config.Config) error {
-	machine := cfg.GetNodeMachine()
-	client, err := ssh.NewClient(machine.Addr, machine.User, machine.Password)
+	client, err := ssh.NewClient(cfg.Nodes[0].Addr, cfg.Nodes[0].User, cfg.Nodes[0].Password)
 	defer client.Close()
 	if err != nil {
 		return err

@@ -2,7 +2,6 @@ package certs
 
 import (
 	"errors"
-	"fmt"
 	"mobingi/ocean/pkg/config"
 	"net"
 
@@ -44,7 +43,7 @@ func getAPIServerAltNames(cfg *config.Config) (*certutil.AltNames, error) {
 			"kubernetes",
 			"kubernetes.default",
 			"kubernetes.default.svc",
-			fmt.Sprintf("kubernetes.default.svc.%s", cfg.Networking.DNSDomain),
+			// TODO fix it	fmt.Sprintf("kubernetes.default.svc.%s", cfg.Networking.DNSDomain),
 		},
 		IPs: []net.IP{
 			//internalAPIServerVirtualIP,

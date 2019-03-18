@@ -2,11 +2,13 @@ package phases
 
 import (
 	"errors"
+	"fmt"
 	"mobingi/ocean/pkg/kubernetes/bootstrap"
+
+	"mobingi/ocean/pkg/tools/cache"
 
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	"mobingi/ocean/pkg/tools/cache"
 
 	"mobingi/ocean/pkg/certs"
 	"mobingi/ocean/pkg/config"
@@ -16,12 +18,11 @@ import (
 )
 
 func Init(cfg *config.Config) error {
-	machine := cfg.GetMasterMachine()
-	sshClient, err := ssh.NewClient(machine.Addr, machine.User, machine.Password)
-	defer sshClient.Close()
+	sshClient, err := ssh.NewClient(cfg.Masters[0].Addr, cfg.Masters[1].User, cfg.Masters[2].Password)
 	if err != nil {
 		return err
 	}
+	defer sshClient.Close()
 
 	if err := certs.CreatePKIAssets(sshClient, cfg); err != nil {
 		return err
@@ -36,6 +37,7 @@ func Init(cfg *config.Config) error {
 	}
 
 	adminConf, exists := cache.Get("admin.conf")
+	fmt.Println(adminConf.(string))
 	if !exists {
 		return errors.New("no admin.conf supported")
 	}
@@ -47,6 +49,7 @@ func Init(cfg *config.Config) error {
 
 	err = bootstrap.Bootstrap(k8sClient, cfg)
 	if err != nil {
+		fmt.Println(err)
 		return err
 	}
 

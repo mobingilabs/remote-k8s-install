@@ -32,8 +32,7 @@ type templateData struct {
 }
 
 func newTemplateData(cfg *config.Config) *templateData {
-	masterMachine := cfg.GetMasterMachine()
 	return &templateData{
-		IP: masterMachine.Addr,
+		IP: cfg.Masters[0].Addr,
 	}
 }

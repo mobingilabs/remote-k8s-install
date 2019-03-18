@@ -1,6 +1,10 @@
 package config
 
-import ()
+import (
+	"io/ioutil"
+
+	"gopkg.in/yaml.v2"
+)
 
 const (
 	workDir = "/etc/kubernetes"
@@ -9,70 +13,39 @@ const (
 
 type MachineRole int
 
-const (
-	MasterRole MachineRole = iota
-	NodeRole
-)
-
 type Config struct {
-	PKIDir           string
-	WorkDir          string
-	AdvertiseAddress string
 	ClusterName      string
-	Machines         []Machine
+	AdvertiseAddress string
 
-	Networking Networking
+	PKIDir  string
+	WorkDir string
+
+	Masters []Machine
+	Nodes   []Machine
 }
 
-// TODO more ssh auth support
+// TODO more ssh auth method support
 type Machine struct {
-	Role     MachineRole
 	Addr     string
 	User     string
 	Password string
 }
 
-func NewConfig() *Config {
-	return &Config{
-		PKIDir:           pkiDir,
-		AdvertiseAddress: "192.168.1.74",
-		WorkDir:          workDir,
-		ClusterName:      "kubernetes",
-		Machines: []Machine{
-			Machine{
-				Role:     MasterRole,
-				Addr:     "192.168.1.74",
-				User:     "root",
-				Password: "947337",
-			},
-		},
-	}
-}
-
-// TODO more than one machine get
-func (c *Config) GetMasterMachine() *Machine {
-	for _, v := range c.Machines {
-		if v.Role == MasterRole {
-			return &v
-		}
+func LoadConfigFromFile(name string) (*Config, error) {
+	confByte, err := ioutil.ReadFile(name)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
-}
+	conf := &Config{}
 
-// TODO more than one machine get
-func (c *Config) GetNodeMachine() *Machine {
-	for _, v := range c.Machines {
-		if v.Role == NodeRole {
-			return &v
-		}
+	if err := yaml.Unmarshal(confByte, conf); err != nil {
+		return nil, err
 	}
 
-	return nil
-}
+	// ? config it or const set
+	conf.PKIDir = pkiDir
+	conf.WorkDir = workDir
 
-type Networking struct {
-	ServiceSubnet string
-	PodSubnet     string
-	DNSDomain     string
+	return conf, nil
 }

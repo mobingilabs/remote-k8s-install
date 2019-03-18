@@ -1,11 +1,11 @@
 package bootstrap
 
 import (
-	"errors"
+	"fmt"
+	"mobingi/ocean/pkg/config"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
-	"mobingi/ocean/pkg/config"
 )
 
 // Bootstrap new token and post secret to apiserver
@@ -19,13 +19,12 @@ func Bootstrap(client clientset.Interface, cfg *config.Config) error {
 
 	secret := bt.ToSecret()
 	if _, err := client.CoreV1().Secrets(metav1.NamespaceSystem).Create(secret); err != nil {
-		return errors.New("can not create secret")
+		return fmt.Errorf("can not create secret:%s", err)
 	}
 
 	if err := BuildBootstrapKubeletConf(cfg, bt.Token.String()); err != nil {
 		return err
 	}
-
 
 	if err := AllowBootstrapTokensToPostCSRs(client); err != nil {
 		return err

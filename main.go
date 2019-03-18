@@ -6,7 +6,10 @@ import (
 )
 
 func main() {
-	cfg := config.NewConfig()
+	cfg, err := config.LoadConfigFromFile("config.yml")
+	if err != nil {
+		panic(err)
+	}
 	if err := phases.Init(cfg); err != nil {
 		panic(err)
 	}
