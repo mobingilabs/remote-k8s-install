@@ -8,8 +8,9 @@ const (
 	KubeApiserverService         = "kube-apiserver.service"
 	KubeControllerManagerService = "kube-controller-manager.service"
 	KubeSchedulerService         = "kube-scheduler.service"
+	KubeletService               = "kubelet.service"
 
-	// 
+	//
 	MastersGroup = "system:masters"
 	NodesGroup   = "system:nodes"
 

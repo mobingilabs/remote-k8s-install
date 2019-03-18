@@ -1,14 +1,3 @@
-package kubelet
-
-const serviceTemplate = `
-[Service]
-Environment="KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf"
-Environment="KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml"
-ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS`
-
-// var/lib/kubelet/config.yaml
-// TOOD read from config
-const configYAML = `
 address: 0.0.0.0
 apiVersion: kubelet.config.k8s.io/v1beta1
 authentication:
@@ -18,7 +7,7 @@ authentication:
     cacheTTL: 2m0s
     enabled: true
   x509:
-    clientCAFile: /etc/kubernetes/pki/ca.crt
+    clientCAFile: /etc/kubernetes/pki/ca.pem
 authorization:
   mode: Webhook
   webhook:
@@ -80,4 +69,4 @@ runtimeRequestTimeout: 2m0s
 serializeImagePulls: true
 streamingConnectionIdleTimeout: 4h0m0s
 syncFrequency: 1m0s
-volumeStatsAggPeriod: 1m0s`
+volumeStatsAggPeriod: 1m0s

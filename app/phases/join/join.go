@@ -1,4 +1,4 @@
-package phases
+package join
 
 import (
 	"mobingi/ocean/pkg/config"
@@ -11,6 +11,8 @@ func Join(cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
+
+	mkdirAll(client, cfg)
 
 	return nil
 }
