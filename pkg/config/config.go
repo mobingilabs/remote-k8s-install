@@ -11,11 +11,9 @@ const (
 	pkiDir  = "/etc/kubernetes/pki"
 )
 
-type MachineRole int
-
 type Config struct {
-	ClusterName      string
-	AdvertiseAddress string
+	ClusterName      string `yaml:"clusterName"`
+	AdvertiseAddress string `yaml:"advertiseAddress"`
 
 	PKIDir  string
 	WorkDir string
