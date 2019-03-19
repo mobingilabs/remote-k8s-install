@@ -9,7 +9,7 @@ import (
 	cmdutil "mobingi/ocean/pkg/util/cmd"
 )
 
-func Start(c *ssh.Client, cfg *config.Config) error {
+func Start(c ssh.Client, cfg *config.Config) error {
 	serviceData, err := getServiceFile(cfg)
 	if err != nil {
 		return err
@@ -32,7 +32,7 @@ func getServiceFile(cfg *config.Config) ([]byte, error) {
 	return []byte(serviceTemplate), nil
 }
 
-func writeServiceFile(c *ssh.Client, serviceData string) error {
+func writeServiceFile(c ssh.Client, serviceData string) error {
 	serviceFilepath := filepath.Join(constants.ServiceDir, constants.KubeControllerManagerService)
 
 	cmd := cmdutil.NewWriteCmd(serviceFilepath, serviceData)
@@ -45,7 +45,7 @@ func writeServiceFile(c *ssh.Client, serviceData string) error {
 	return nil
 }
 
-func startService(c *ssh.Client) error {
+func startService(c ssh.Client) error {
 	cmd := cmdutil.NewSystemStartCmd(constants.KubeControllerManagerService)
 	c.DoWithoutOutput(cmd)
 

@@ -4,6 +4,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
+	"mobingi/ocean/pkg/constants"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -33,14 +34,14 @@ type clientCertAuth struct {
 	Organizations []string
 }
 
-func CreateKubeconfigFiles(c *ssh.Client, cfg *config.Config) error {
+func CreateKubeconfigFiles(c ssh.Client, cfg *config.Config) error {
 	specs, err := getKubeconfigSpecs(c, cfg)
 	if err != nil {
 		return err
 	}
 
 	//TODO other location just mkdir all once
-	cmd := cmdutil.NewMkdirAllCmd(cfg.WorkDir)
+	cmd := cmdutil.NewMkdirAllCmd(constants.WorkDir)
 	_, err = c.Do(cmd)
 	if err != nil {
 		return err
@@ -63,7 +64,7 @@ func CreateKubeconfigFiles(c *ssh.Client, cfg *config.Config) error {
 			return err
 		}
 
-		if err := writeKubeconfigFile(c, cfg.WorkDir, kubeconfigFileName, config); err != nil {
+		if err := writeKubeconfigFile(c, constants.WorkDir, kubeconfigFileName, config); err != nil {
 			return errors.Wrap(err, "kubeconfig")
 		}
 	}
@@ -71,9 +72,9 @@ func CreateKubeconfigFiles(c *ssh.Client, cfg *config.Config) error {
 	return nil
 }
 
-func getKubeconfigSpecs(c *ssh.Client, cfg *config.Config) (map[string]*kubeconfigSpec, error) {
+func getKubeconfigSpecs(c ssh.Client, cfg *config.Config) (map[string]*kubeconfigSpec, error) {
 	// TODO load from cache
-	caCert, caKey, err := pkiutil.TryLoadCertAndKeyFromDisk(c, cfg.PKIDir, kubeadmconstants.CACertAndKeyBaseName)
+	caCert, caKey, err := pkiutil.TryLoadCertAndKeyFromDisk(c, constants.PKIDir, kubeadmconstants.CACertAndKeyBaseName)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +136,7 @@ func buildKubeconfigFromSpec(spec *kubeconfigSpec, clusterName string) (*clientc
 	return nil, nil
 }
 
-func writeKubeconfigFile(c *ssh.Client, dir, name string, cfg *clientcmdapi.Config) error {
+func writeKubeconfigFile(c ssh.Client, dir, name string, cfg *clientcmdapi.Config) error {
 	content, err := clientcmd.Write(*cfg)
 	if err != nil {
 		return err

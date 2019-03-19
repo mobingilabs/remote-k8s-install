@@ -9,7 +9,7 @@ import (
 	cmdutil "mobingi/ocean/pkg/util/cmd"
 )
 
-func Start(c *ssh.Client, cfg *config.Config) error {
+func Start(c ssh.Client, cfg *config.Config) error {
 	if err := writeServiceFile(c, serviceTemplate); err != nil {
 		return err
 	}
@@ -24,7 +24,7 @@ func Start(c *ssh.Client, cfg *config.Config) error {
 	return nil
 }
 
-func writeServiceFile(c *ssh.Client, serviceData string) error {
+func writeServiceFile(c ssh.Client, serviceData string) error {
 	serviceFilepath := filepath.Join(constants.ServiceDir, constants.KubeletService)
 
 	cmd := cmdutil.NewWriteCmd(serviceFilepath, serviceData)
@@ -33,7 +33,7 @@ func writeServiceFile(c *ssh.Client, serviceData string) error {
 	return nil
 }
 
-func writeConfigFile(c *ssh.Client) error {
+func writeConfigFile(c ssh.Client) error {
 	cmd := cmdutil.NewMkdirAllCmd("/var/lib/kubelet")
 	c.Do(cmd)
 
@@ -43,7 +43,7 @@ func writeConfigFile(c *ssh.Client) error {
 	return nil
 }
 
-func startService(c *ssh.Client) error {
+func startService(c ssh.Client) error {
 	cmd := cmdutil.NewSystemStartCmd(constants.KubeletService)
 	c.DoWithoutOutput(cmd)
 

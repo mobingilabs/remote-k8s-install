@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"mobingi/ocean/pkg/config"
+	"mobingi/ocean/pkg/constants"
 	"mobingi/ocean/pkg/service/kubelet"
 	"mobingi/ocean/pkg/ssh"
 	"mobingi/ocean/pkg/tools/cache"
@@ -12,13 +13,13 @@ import (
 )
 
 func Start(cfg *config.Config) error {
-	client, err := ssh.NewClient(cfg.Nodes[0].Addr, cfg.Nodes[0].User, cfg.Nodes[0].Password)
+	client, err := ssh.NewClient(cfg.Nodes[0].PublicIP, cfg.Nodes[0].User, cfg.Nodes[0].Password)
 	defer client.Close()
 	if err != nil {
 		return err
 	}
 
-	mkdirAll(client, cfg)
+	mkdirAll(client)
 
 	if err := writeBootstrapConf(cfg, client); err != nil {
 		return err
@@ -32,9 +33,9 @@ func Start(cfg *config.Config) error {
 
 }
 
-func writeBootstrapConf(cfg *config.Config, c *ssh.Client) error {
+func writeBootstrapConf(cfg *config.Config, c ssh.Client) error {
 	// TODO make bootstarp-kubelet.conf to constants
-	bootstrapConfFilename := filepath.Join(cfg.WorkDir, "bootstrap-kubelet.conf")
+	bootstrapConfFilename := filepath.Join(constants.WorkDir, "bootstrap-kubelet.conf")
 	content, exists := cache.Get("bootstrap-kubelet.conf")
 	if !exists {
 		return errors.New("can not read bootstrap-kubelet.conf from cache")

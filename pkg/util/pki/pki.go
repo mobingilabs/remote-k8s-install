@@ -32,7 +32,7 @@ const (
 )
 
 // TryLoadCertAndKeyFromDisk get cert and key from remote server
-func TryLoadCertAndKeyFromDisk(c *ssh.Client, pkiPath, name string) (*x509.Certificate, *rsa.PrivateKey, error) {
+func TryLoadCertAndKeyFromDisk(c ssh.Client, pkiPath, name string) (*x509.Certificate, *rsa.PrivateKey, error) {
 	cert, err := tryLoadCertFromDisk(c, pkiPath, name)
 	if err != nil {
 		return nil, nil, err
@@ -44,8 +44,8 @@ func TryLoadCertAndKeyFromDisk(c *ssh.Client, pkiPath, name string) (*x509.Certi
 	return cert, key, nil
 }
 
-// TODO change name
-func tryLoadCertFromDisk(c *ssh.Client, pkiPath, name string) (*x509.Certificate, error) {
+// TODO change name,now it is load from a store(cache or sql)
+func tryLoadCertFromDisk(c ssh.Client, pkiPath, name string) (*x509.Certificate, error) {
 	certPath := pathForCert(pkiPath, name)
 	cmd := cmdutil.NewReadCmd(certPath)
 	content, err := c.Do(cmd)
@@ -60,7 +60,7 @@ func tryLoadCertFromDisk(c *ssh.Client, pkiPath, name string) (*x509.Certificate
 	return certs[0], nil
 }
 
-func tryLoadKeyFromDisk(c *ssh.Client, pkiPath, name string) (*rsa.PrivateKey, error) {
+func tryLoadKeyFromDisk(c ssh.Client, pkiPath, name string) (*rsa.PrivateKey, error) {
 	keyPath := pathForKey(pkiPath, name)
 	cmd := cmdutil.NewReadCmd(keyPath)
 	content, err := c.Do(cmd)

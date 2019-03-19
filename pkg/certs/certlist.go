@@ -53,7 +53,7 @@ func (c *cert) getConfig(cfg *config.Config) (*certutil.Config, error) {
 	return &c.config, nil
 }
 
-func (c *cert) newCertAndKeyFromCA(sshC *ssh.Client, cfg *config.Config, caCert *x509.Certificate, caKey *rsa.PrivateKey) error {
+func (c *cert) newCertAndKeyFromCA(sshC ssh.Client, cfg *config.Config, caCert *x509.Certificate, caKey *rsa.PrivateKey) error {
 	certSpec, err := c.getConfig(cfg)
 	if err != nil {
 		return err
@@ -69,7 +69,7 @@ func (c *cert) newCertAndKeyFromCA(sshC *ssh.Client, cfg *config.Config, caCert 
 		return err
 	}
 
-	return writeCertAndKey(sshC, cfg.PKIDir, c.BaseName, cert, key)
+	return writeCertAndKey(sshC, c.BaseName, cert, key)
 }
 
 // CertificateTree is represents a one-level-deep tree, mapping a CA to the certs that depend on it.
@@ -77,7 +77,7 @@ type ceretificates []*cert
 type certificateTree map[*cert]certificates
 
 // CreateTree creates the CAs, certs signed by the CAs, and writes them all to disk.
-func (t certificateTree) createTree(c *ssh.Client, cfg *config.Config) error {
+func (t certificateTree) createTree(c ssh.Client, cfg *config.Config) error {
 	for ca, leaves := range t {
 		certSpec, err := ca.getConfig(cfg)
 		if err != nil {
@@ -89,7 +89,7 @@ func (t certificateTree) createTree(c *ssh.Client, cfg *config.Config) error {
 			return err
 		}
 
-		if err := writeCertAndKey(c, cfg.PKIDir, ca.BaseName, caCert, caKey); err != nil {
+		if err := writeCertAndKey(c, ca.BaseName, caCert, caKey); err != nil {
 			return err
 		}
 
@@ -219,6 +219,7 @@ var (
 			CommonName: "etcd-ca",
 		},
 	}
+
 	// certEtcdServer is the definition of the cert used to serve etcd to clients.
 	certEtcdServer = cert{
 		Name:     "etcd-server",

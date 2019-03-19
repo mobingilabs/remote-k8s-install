@@ -14,7 +14,7 @@ type flagOpts struct {
 const fileName = "/var/lib/kubelet/kubelet-flags.env"
 
 // TODO more from config
-func WriteKubeletDynamicEnvFile(mc *ssh.Client) error {
+func WriteKubeletDynamicEnvFile(mc ssh.Client) error {
 	var content = `KUBELET_KUBEADM_ARGS=--cgroup-driver=systemd --network-plugin=cni --pod-infra-container-image=k8s.gcr.io/pause:3.1`
 	cmd := cmdutil.NewMkdirAllCmd(filepath.Dir(fileName))
 	mc.Do(cmd)

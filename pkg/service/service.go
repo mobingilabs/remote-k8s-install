@@ -10,7 +10,7 @@ import (
 	"mobingi/ocean/pkg/ssh"
 )
 
-func Start(c *ssh.Client, cfg *config.Config) error {
+func Start(c ssh.Client, cfg *config.Config) error {
 	if err := etcd.Start(c, cfg); err != nil {
 		return err
 	}

@@ -7,11 +7,19 @@ import (
 	stdssh "golang.org/x/crypto/ssh"
 )
 
-type Client struct {
+// Client is a conn to remote machine
+type Client interface {
+	Do(cmd string) (string, error)
+	DoWithoutOutput(cmd string) error
+
+	Close() error
+}
+
+type client struct {
 	conn *stdssh.Client
 }
 
-func NewClient(addr, user, password string) (*Client, error) {
+func NewClient(addr, user, password string) (Client, error) {
 	config := &stdssh.ClientConfig{
 		User: user,
 		Auth: []stdssh.AuthMethod{
@@ -20,19 +28,19 @@ func NewClient(addr, user, password string) (*Client, error) {
 		HostKeyCallback: stdssh.InsecureIgnoreHostKey(),
 	}
 
-	client, err := stdssh.Dial("tcp", addr+":22", config)
+	sshClient, err := stdssh.Dial("tcp", addr+":22", config)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Client{
-		conn: client,
+	return &client{
+		conn: sshClient,
 	}, nil
 }
 
 // Do exec cmd on the romote machine and return std output
 // TODO some cmd don't need stdout,some need. split it to two func
-func (c *Client) Do(cmd string) (string, error) {
+func (c *client) Do(cmd string) (string, error) {
 	sess, err := c.conn.NewSession()
 	if err != nil {
 		return "", err
@@ -47,7 +55,7 @@ func (c *Client) Do(cmd string) (string, error) {
 	return string(output), nil
 }
 
-func (c *Client) DoWithoutOutput(cmd string) error {
+func (c *client) DoWithoutOutput(cmd string) error {
 	sess, err := c.conn.NewSession()
 	if err != nil {
 		return err
@@ -60,6 +68,6 @@ func (c *Client) DoWithoutOutput(cmd string) error {
 	return sess.Run(cmd)
 }
 
-func (c *Client) Close() error {
+func (c *client) Close() error {
 	return c.Close()
 }

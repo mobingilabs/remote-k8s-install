@@ -18,7 +18,7 @@ import (
 )
 
 func Start(cfg *config.Config) error {
-	sshClient, err := ssh.NewClient(cfg.Masters[0].Addr, cfg.Masters[0].User, cfg.Masters[0].Password)
+	sshClient, err := ssh.NewClient(cfg.Masters[0].PublicIP, cfg.Masters[0].User, cfg.Masters[0].Password)
 	if err != nil {
 		return err
 	}

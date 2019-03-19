@@ -10,7 +10,7 @@ import (
 	templateutil "mobingi/ocean/pkg/util/template"
 )
 
-func Start(c *ssh.Client, cfg *config.Config) error {
+func Start(c ssh.Client, cfg *config.Config) error {
 	serviceData, err := getServiceFile(cfg)
 	if err != nil {
 		return err
@@ -35,7 +35,7 @@ func getServiceFile(cfg *config.Config) ([]byte, error) {
 	return data, nil
 }
 
-func writeServiceFile(c *ssh.Client, serviceData string) error {
+func writeServiceFile(c ssh.Client, serviceData string) error {
 	serviceFilepath := filepath.Join(constants.ServiceDir, constants.EtcdService)
 
 	cmd := cmdutil.NewWriteCmd(serviceFilepath, serviceData)
@@ -45,7 +45,7 @@ func writeServiceFile(c *ssh.Client, serviceData string) error {
 	return nil
 }
 
-func startService(c *ssh.Client) error {
+func startService(c ssh.Client) error {
 	cmd := cmdutil.NewSystemStartCmd(constants.EtcdService)
 	c.DoWithoutOutput(cmd)
 
