@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"mobingi/ocean/pkg/log"
 	"path/filepath"
 
 	"mobingi/ocean/pkg/constants"
@@ -28,9 +29,10 @@ func writeCertAndKey(c ssh.Client, name string, cert *x509.Certificate, key *rsa
 		Bytes: cert.Raw,
 	}
 	certData := pem.EncodeToMemory(&certBlock)
-	if err := writeKey(c, name, certData); err != nil {
+	if err := writeCert(c, name, certData); err != nil {
 		return err
 	}
+	log.Infof("write cert and key:%s sucessed", name)
 
 	return nil
 }
@@ -58,11 +60,12 @@ func writePublicKey(c ssh.Client, keyPath string, key *rsa.PublicKey) error {
 
 	data := pem.EncodeToMemory(&block)
 
-	return writeKey(c, keyPath, data)
+	return writePub(c, keyPath, data)
 }
 
 // writeKey writes the data to disk
-func writeKey(c ssh.Client, keyPath string, data []byte) error {
+func writeKey(c ssh.Client, name string, data []byte) error {
+	keyPath := filepath.Join(constants.PKIDir, fmt.Sprintf("%s.key"), name)
 	cache.Put(keyPath, data)
 	cmd := cmdutil.NewWriteCmd(keyPath, string(data))
 	// TODO check output exec result, ok or false
@@ -70,14 +73,18 @@ func writeKey(c ssh.Client, keyPath string, data []byte) error {
 	return err
 }
 
-func pathForCert(name string) string {
-	return filepath.Join(constants.PKIDir, fmt.Sprintf("%s.crt", name))
+func writeCert(c ssh.Client, name string, data []byte) error {
+	keyPath := filepath.Join(constants.PKIDir, fmt.Sprintf("%s.crt"), name)
+	cache.Put(keyPath, data)
+	_, err := c.Do(cmdutil.NewWriteCmd(keyPath, string(data)))
+
+	return err
 }
 
-func pathForPrivateKey(name string) string {
-	return filepath.Join(constants.PKIDir, fmt.Sprintf("%s.key", name))
-}
+func writePub(c ssh.Client, name string, data []byte) error {
+	keyPath := filepath.Join(constants.PKIDir, fmt.Sprintf("%s.pub"), name)
+	cache.Put(keyPath, data)
+	_, err := c.Do(cmdutil.NewWriteCmd(keyPath, string(data)))
 
-func pathForPublicKey(name string) string {
-	return filepath.Join(constants.PKIDir, fmt.Sprintf("%s.pub", name))
+	return err
 }

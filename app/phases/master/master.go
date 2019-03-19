@@ -3,9 +3,8 @@ package master
 import (
 	"errors"
 	"fmt"
-	"mobingi/ocean/pkg/kubernetes/bootstrap"
-
-	"mobingi/ocean/pkg/tools/cache"
+	"mobingi/ocean/pkg/constants"
+	"path/filepath"
 
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -13,20 +12,30 @@ import (
 	"mobingi/ocean/pkg/certs"
 	"mobingi/ocean/pkg/config"
 	"mobingi/ocean/pkg/kubeconfig"
+	"mobingi/ocean/pkg/kubernetes/bootstrap"
+	"mobingi/ocean/pkg/log"
 	"mobingi/ocean/pkg/service"
 	"mobingi/ocean/pkg/ssh"
+	"mobingi/ocean/pkg/tools/cache"
+	cmdutil "mobingi/ocean/pkg/util/cmd"
 )
 
 func Start(cfg *config.Config) error {
 	sshClient, err := ssh.NewClient(cfg.Masters[0].PublicIP, cfg.Masters[0].User, cfg.Masters[0].Password)
 	if err != nil {
+		log.Error(err)
 		return err
 	}
+	log.Info("ssh client dial sucessed")
 	defer sshClient.Close()
+
+	prepare(sshClient)
+	log.Info("master prepare sucessed")
 
 	if err := certs.CreatePKIAssets(sshClient, cfg); err != nil {
 		return err
 	}
+	log.Info("crate pki assestes sucess")
 
 	if err := kubeconfig.CreateKubeconfigFiles(sshClient, cfg); err != nil {
 		return err
@@ -73,4 +82,16 @@ func newK8sClientFromConf(conf []byte) (clientset.Interface, error) {
 	}
 
 	return client, nil
+}
+
+func mkdirAll(c ssh.Client) {
+	c.Do(cmdutil.NewMkdirAllCmd(constants.WorkDir))
+	c.Do(cmdutil.NewMkdirAllCmd(constants.PKIDir))
+	c.Do(cmdutil.NewMkdirAllCmd(filepath.Join(constants.PKIDir, "etcd")))
+}
+
+// TODO
+// docker install,set env,download binary...
+func prepare(c ssh.Client) {
+	mkdirAll(c)
 }

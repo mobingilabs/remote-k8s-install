@@ -7,6 +7,10 @@ import (
 	stdssh "golang.org/x/crypto/ssh"
 )
 
+const (
+	dialTimeout = 10 * time.Second
+)
+
 // Client is a conn to remote machine
 type Client interface {
 	Do(cmd string) (string, error)
@@ -26,6 +30,7 @@ func NewClient(addr, user, password string) (Client, error) {
 			stdssh.Password(password),
 		},
 		HostKeyCallback: stdssh.InsecureIgnoreHostKey(),
+		Timeout:         dialTimeout,
 	}
 
 	sshClient, err := stdssh.Dial("tcp", addr+":22", config)
