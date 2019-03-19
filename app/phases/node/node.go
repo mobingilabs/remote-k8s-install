@@ -1,16 +1,17 @@
-package join
+package node
 
 import (
 	"errors"
+	"path/filepath"
+
 	"mobingi/ocean/pkg/config"
 	"mobingi/ocean/pkg/service/kubelet"
 	"mobingi/ocean/pkg/ssh"
 	"mobingi/ocean/pkg/tools/cache"
 	cmdutil "mobingi/ocean/pkg/util/cmd"
-	"path/filepath"
 )
 
-func Join(cfg *config.Config) error {
+func Start(cfg *config.Config) error {
 	client, err := ssh.NewClient(cfg.Nodes[0].Addr, cfg.Nodes[0].User, cfg.Nodes[0].Password)
 	defer client.Close()
 	if err != nil {
@@ -28,6 +29,7 @@ func Join(cfg *config.Config) error {
 	}
 
 	return nil
+
 }
 
 func writeBootstrapConf(cfg *config.Config, c *ssh.Client) error {

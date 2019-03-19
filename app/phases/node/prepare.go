@@ -1,4 +1,4 @@
-package join
+package node
 
 import (
 	"mobingi/ocean/pkg/config"

@@ -1,4 +1,4 @@
-package init
+package master
 
 import (
 	"errors"
@@ -17,7 +17,7 @@ import (
 	"mobingi/ocean/pkg/ssh"
 )
 
-func Init(cfg *config.Config) error {
+func Start(cfg *config.Config) error {
 	sshClient, err := ssh.NewClient(cfg.Masters[0].Addr, cfg.Masters[0].User, cfg.Masters[0].Password)
 	if err != nil {
 		return err
