@@ -1,6 +1,6 @@
 # ocean
 
-**Note**: it is a developing and test, so it is can not for production.
+**Note**: it is on developing and testing, so it is can't use for production.
 
 ## TODO
 - HA supported(now it is a just one master and one node)
