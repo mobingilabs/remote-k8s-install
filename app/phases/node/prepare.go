@@ -7,16 +7,11 @@ import (
 )
 
 func mkdirAll(c ssh.Client) error {
-	cmd := cmdutil.NewMkdirAllCmd(constants.WorkDir)
-	c.Do(cmd)
-
-	cmd = cmdutil.NewMkdirAllCmd(constants.PKIDir)
-	c.Do(cmd)
-
+	c.Do(cmdutil.NewMkdirAllCmd(constants.WorkDir))
+	c.Do(cmdutil.NewMkdirAllCmd(constants.PKIDir))
 	// kubelet config path
 	// TODO read from config
-	cmd = cmdutil.NewMkdirAllCmd("/var/lib/kubelet")
-	c.Do(cmd)
+	c.Do(cmdutil.NewMkdirAllCmd("/var/lib/kubelet"))
 
 	return nil
 }

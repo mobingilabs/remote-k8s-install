@@ -3,7 +3,6 @@ package master
 import (
 	"errors"
 	"fmt"
-	"mobingi/ocean/pkg/constants"
 	"path/filepath"
 
 	clientset "k8s.io/client-go/kubernetes"
@@ -11,6 +10,7 @@ import (
 
 	"mobingi/ocean/pkg/certs"
 	"mobingi/ocean/pkg/config"
+	"mobingi/ocean/pkg/constants"
 	"mobingi/ocean/pkg/kubeconfig"
 	"mobingi/ocean/pkg/kubernetes/bootstrap"
 	"mobingi/ocean/pkg/log"
@@ -35,32 +35,38 @@ func Start(cfg *config.Config) error {
 	if err := certs.CreatePKIAssets(sshClient, cfg); err != nil {
 		return err
 	}
-	log.Info("crate pki assestes sucess")
+	log.Info("crate pki assestes sucessed")
 
 	if err := kubeconfig.CreateKubeconfigFiles(sshClient, cfg); err != nil {
 		return err
 	}
+	log.Info("create kube config files sucessed")
 
 	if err := service.Start(sshClient, cfg); err != nil {
 		return err
 	}
+	log.Info("service started")
 
 	adminConf, exists := cache.Get("admin.conf")
 	fmt.Println(adminConf.(string))
 	if !exists {
+		log.Error("no admin.conf supported from cache")
 		return errors.New("no admin.conf supported")
 	}
 
 	k8sClient, err := newK8sClientFromConf(adminConf.([]byte))
 	if err != nil {
+		log.Errorf("crete k8s clinet err:%s", err.Error())
 		return err
 	}
+	log.Info("new k8s client sucessed")
 
 	err = bootstrap.Bootstrap(k8sClient, cfg)
 	if err != nil {
-		fmt.Println(err)
+		log.Errorf("bootstrap err:%s", err.Error())
 		return err
 	}
+	log.Info("bootstrap suecssed")
 
 	return nil
 }

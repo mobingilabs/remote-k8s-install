@@ -65,7 +65,7 @@ func writePublicKey(c ssh.Client, keyPath string, key *rsa.PublicKey) error {
 
 // writeKey writes the data to disk
 func writeKey(c ssh.Client, name string, data []byte) error {
-	keyPath := filepath.Join(constants.PKIDir, fmt.Sprintf("%s.key"), name)
+	keyPath := filepath.Join(constants.PKIDir, fmt.Sprintf("%s.key", name))
 	cache.Put(keyPath, data)
 	cmd := cmdutil.NewWriteCmd(keyPath, string(data))
 	// TODO check output exec result, ok or false
@@ -74,7 +74,7 @@ func writeKey(c ssh.Client, name string, data []byte) error {
 }
 
 func writeCert(c ssh.Client, name string, data []byte) error {
-	keyPath := filepath.Join(constants.PKIDir, fmt.Sprintf("%s.crt"), name)
+	keyPath := filepath.Join(constants.PKIDir, fmt.Sprintf("%s.crt", name))
 	cache.Put(keyPath, data)
 	_, err := c.Do(cmdutil.NewWriteCmd(keyPath, string(data)))
 
@@ -82,7 +82,7 @@ func writeCert(c ssh.Client, name string, data []byte) error {
 }
 
 func writePub(c ssh.Client, name string, data []byte) error {
-	keyPath := filepath.Join(constants.PKIDir, fmt.Sprintf("%s.pub"), name)
+	keyPath := filepath.Join(constants.PKIDir, fmt.Sprintf("%s.pub", name))
 	cache.Put(keyPath, data)
 	_, err := c.Do(cmdutil.NewWriteCmd(keyPath, string(data)))
 
