@@ -31,8 +31,9 @@ type templateData struct {
 	IP string
 }
 
+// etcd is just listen private net, so we just need private ip to service file
 func newTemplateData(cfg *config.Config) *templateData {
 	return &templateData{
-		IP: cfg.Masters[0].Addr,
+		IP: cfg.Masters[0].PrivateIP,
 	}
 }

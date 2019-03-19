@@ -7,7 +7,7 @@ import (
 )
 
 func Start() error {
-	cfg, err := config.LoadConfigFromFile("config.yml")
+	cfg, err := config.LoadConfigFromFile("config.yaml")
 	if err != nil {
 		return err
 	}

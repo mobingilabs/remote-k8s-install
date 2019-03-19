@@ -4,10 +4,12 @@ clusterName: kubernetes
 advertiseAddress: 192.168.1.7
 #master can be 3 or 5,suggest is 3
 masters:
-  - addr: 192.168.1.13
+  - publicIP: 47.52.227.32
+    privateIP: 192.168.1.1
     user: root
     password: 312313
 nodes:
-  - addr: 192.168.1.1
+  - publicIP: 47.52.227.33
+    privateIP: 192.168.1.2
     user: root
     password: 312313

@@ -1,0 +1,15 @@
+#can be others, now we hard code the kubernetes in the source code,future fix up it
+clusterName: kubernetes
+#loadbalancer address,for others access apiserver
+advertiseAddress: 192.168.1.7
+#master can be 3 or 5,suggest is 3
+masters:
+  - publicAddr: 47.52.227.34
+    privateAddr: 192.168.0.218
+    user: root
+    password: A!Y947337
+nodes:
+  - publicAddr: 47.75.142.251
+    privateAddr: 192.168.0.219
+    user: root
+    password: A!Y947337

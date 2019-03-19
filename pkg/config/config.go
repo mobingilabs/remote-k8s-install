@@ -6,17 +6,9 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const (
-	workDir = "/etc/kubernetes"
-	pkiDir  = "/etc/kubernetes/pki"
-)
-
 type Config struct {
 	ClusterName      string `yaml:"clusterName"`
 	AdvertiseAddress string `yaml:"advertiseAddress"`
-
-	PKIDir  string
-	WorkDir string
 
 	Masters []Machine
 	Nodes   []Machine
@@ -24,9 +16,10 @@ type Config struct {
 
 // TODO more ssh auth method support
 type Machine struct {
-	Addr     string
-	User     string
-	Password string
+	PublicIP  string `yaml:"publicIP"`
+	PrivateIP string `yaml:"privateIP"`
+	User      string
+	Password  string
 }
 
 func LoadConfigFromFile(name string) (*Config, error) {
@@ -40,10 +33,6 @@ func LoadConfigFromFile(name string) (*Config, error) {
 	if err := yaml.Unmarshal(confByte, conf); err != nil {
 		return nil, err
 	}
-
-	// ? config it or const set
-	conf.PKIDir = pkiDir
-	conf.WorkDir = workDir
 
 	return conf, nil
 }
