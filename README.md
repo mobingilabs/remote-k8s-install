@@ -11,3 +11,4 @@
 - ssh broken line reconnection
 - More reasonable directory structure
 - more check and more config
+- dep manage add,because the china net, we may be used vendor mechanism,not go mod
