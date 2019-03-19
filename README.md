@@ -5,6 +5,7 @@
 ## TODO
 - HA supported(now it is a just one master and one node)
 - no need config file,it exposed as a rest server
+- not ssh cat, but like scp,copy many files once time to speed up install
 
 ## fix up
 - log add(now no any log),may we will use zap(by uber)

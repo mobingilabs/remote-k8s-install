@@ -3,9 +3,10 @@ package constants
 const (
 	// env
 	// ServiceDir is a dir for systemd service file
-	ServiceDir = "/etc/systemd/system"
-	WorkDir    = "/etc/kubernetes"
-	PKIDir     = "/etc/kubernetes/pki"
+	ServiceDir  = "/etc/systemd/system"
+	WorkDir     = "/etc/kubernetes"
+	PKIDir      = "/etc/kubernetes/pki"
+	ETCDDataDir = "/var/lib/etcd"
 
 	// certs
 	CACertAndKeyBaseName = "ca"

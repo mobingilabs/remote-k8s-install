@@ -67,12 +67,13 @@ func (c *client) DoWithoutOutput(cmd string) error {
 	}
 	defer sess.Close()
 	if strings.HasPrefix(cmd, "systemctl") {
-		time.Sleep(30 * time.Second)
+		//TODO test so we can get a proper time duration
+		time.Sleep(15 * time.Second)
 	}
 
 	return sess.Run(cmd)
 }
 
 func (c *client) Close() error {
-	return c.Close()
+	return c.conn.Close()
 }

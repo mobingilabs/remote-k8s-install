@@ -34,7 +34,7 @@ func Error(a ...interface{}) {
 func Errorf(format string, a ...interface{}) {
 	funcN, file, line, ok := runtime.Caller(2)
 	if ok {
-		logger.Printf("func:%s,file:%s,line:%s", funcN, file, line)
+		logger.Printf("func:%s,file:%s,line:%d", funcN, file, line)
 	}
 
 	logger.Printf(format, a...)

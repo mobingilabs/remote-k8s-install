@@ -5,11 +5,11 @@ import (
 	"mobingi/ocean/pkg/service/etcd"
 	"mobingi/ocean/pkg/service/kubeapiserver"
 	"mobingi/ocean/pkg/service/kubecontrollermanager"
-	"mobingi/ocean/pkg/service/kubelet"
 	"mobingi/ocean/pkg/service/kubescheduler"
 	"mobingi/ocean/pkg/ssh"
 )
 
+// TODO we will change it,kubelet ?
 func Start(c ssh.Client, cfg *config.Config) error {
 	if err := etcd.Start(c, cfg); err != nil {
 		return err
@@ -24,10 +24,6 @@ func Start(c ssh.Client, cfg *config.Config) error {
 	}
 
 	if err := kubescheduler.Start(c, cfg); err != nil {
-		return err
-	}
-
-	if err := kubelet.Start(c, cfg); err != nil {
 		return err
 	}
 

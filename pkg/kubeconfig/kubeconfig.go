@@ -80,12 +80,13 @@ func getKubeconfigSpecs(c ssh.Client, cfg *config.Config) (map[string]*kubeconfi
 	}
 
 	// TODO port from config
-	masterEndpoint := fmt.Sprintf("https://%s:6443", cfg.AdvertiseAddress)
+	publicEndpoint := fmt.Sprintf("https://%s:6443", cfg.AdvertiseAddress)
+	privateEndpoint := fmt.Sprintf("https://%s:6443", cfg.Masters[0].PrivateIP)
 
 	var kubeconfigSepcs = map[string]*kubeconfigSpec{
 		kubeadmconstants.AdminKubeConfigFileName: {
 			CACert:     caCert,
-			APIServer:  masterEndpoint,
+			APIServer:  publicEndpoint,
 			ClientName: "kubernetes-admin",
 			ClientCertAuth: &clientCertAuth{
 				CAKey:         caKey,
@@ -94,7 +95,7 @@ func getKubeconfigSpecs(c ssh.Client, cfg *config.Config) (map[string]*kubeconfi
 		},
 		kubeadmconstants.ControllerManagerKubeConfigFileName: {
 			CACert:     caCert,
-			APIServer:  masterEndpoint,
+			APIServer:  privateEndpoint,
 			ClientName: kubeadmconstants.ControllerManagerUser,
 			ClientCertAuth: &clientCertAuth{
 				CAKey: caKey,
@@ -102,7 +103,7 @@ func getKubeconfigSpecs(c ssh.Client, cfg *config.Config) (map[string]*kubeconfi
 		},
 		kubeadmconstants.SchedulerKubeConfigFileName: {
 			CACert:     caCert,
-			APIServer:  masterEndpoint,
+			APIServer:  privateEndpoint,
 			ClientName: kubeadmconstants.SchedulerUser,
 			ClientCertAuth: &clientCertAuth{
 				CAKey: caKey,

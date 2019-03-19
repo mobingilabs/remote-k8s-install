@@ -2,7 +2,6 @@ package master
 
 import (
 	"errors"
-	"fmt"
 	"path/filepath"
 
 	clientset "k8s.io/client-go/kubernetes"
@@ -48,7 +47,6 @@ func Start(cfg *config.Config) error {
 	log.Info("service started")
 
 	adminConf, exists := cache.Get("admin.conf")
-	fmt.Println(adminConf.(string))
 	if !exists {
 		log.Error("no admin.conf supported from cache")
 		return errors.New("no admin.conf supported")
@@ -94,6 +92,7 @@ func mkdirAll(c ssh.Client) {
 	c.Do(cmdutil.NewMkdirAllCmd(constants.WorkDir))
 	c.Do(cmdutil.NewMkdirAllCmd(constants.PKIDir))
 	c.Do(cmdutil.NewMkdirAllCmd(filepath.Join(constants.PKIDir, "etcd")))
+	c.Do(cmdutil.NewMkdirAllCmd(constants.ETCDDataDir))
 }
 
 // TODO
