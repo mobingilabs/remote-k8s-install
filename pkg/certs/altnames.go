@@ -25,6 +25,8 @@ func getAPIServerAltNames(cfg *config.Config) (*certutil.AltNames, error) {
 		return nil, errors.New("must have advertiseAddress")
 	}
 
+	publicAddress := net.ParseIP(cfg.Masters[0].PublicIP)
+
 	// TODO fix up
 	/*
 		_, svcSubnet, err := net.ParseCIDR(cfg.Networking.ServiceSubnet)
@@ -48,6 +50,7 @@ func getAPIServerAltNames(cfg *config.Config) (*certutil.AltNames, error) {
 		IPs: []net.IP{
 			//internalAPIServerVirtualIP,
 			advertiseAddress,
+			publicAddress,
 		},
 	}
 

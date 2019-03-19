@@ -14,7 +14,7 @@ import (
 
 // BuildBootstrapKubeletConf push the bootstrap-kubelet.conf to cache
 func BuildBootstrapKubeletConf(cfg *config.Config, token string) error {
-	masterEndpoint := fmt.Sprintf("https://%s:6443", cfg.AdvertiseAddress)
+	masterEndpoint := fmt.Sprintf("https://%s:6443", cfg.Masters[0].PrivateIP)
 	caCert, exists := cache.Get("ca.crt")
 	if !exists {
 		return errors.New("ca.crt not exist in cache")
