@@ -1,11 +1,12 @@
 package bootstrap
 
 import (
+	"mobingi/ocean/pkg/constants"
 	"fmt"
 	"strings"
 	"time"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
 	bootstrapapi "k8s.io/cluster-bootstrap/token/api"
@@ -45,10 +46,13 @@ func NewBootstrapToken() (*BootstrapToken, error) {
 	bootstrapTokenString, err := NewBootstrapTokenString(tokenString)
 	if err != nil {
 		return nil, err
+
 	}
 
 	return &BootstrapToken{
 		Token: bootstrapTokenString,
+		Usages: []string{"authentication", "signing"},
+		Groups: []string{constants.NodeBootstrapTokenAuthGroup},
 	}, nil
 }
 

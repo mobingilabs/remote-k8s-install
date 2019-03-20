@@ -6,9 +6,9 @@ Documentation=https://github.com/GoogleCloudPlatform/kubernetes
 After=network.target
 
 [Service]
-ExecStart=/usr/local/bin/kubelet \
-  --config=/var/lib/kubelet/config.yaml \
-  --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf \
+ExecStart=/usr/local/bin/kubelet \\
+  --config=/var/lib/kubelet/config.yaml \\
+  --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf \\
   --pod-infra-container-image=registry.cn-beijing.aliyuncs.com/k8s_images/pause-amd64:3.1
 Rstart=on-failure
 RestartSec=5
