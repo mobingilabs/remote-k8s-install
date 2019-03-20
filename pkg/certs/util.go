@@ -74,8 +74,9 @@ func writeKey(c ssh.Client, name string, data []byte) error {
 }
 
 func writeCert(c ssh.Client, name string, data []byte) error {
-	keyPath := filepath.Join(constants.PKIDir, fmt.Sprintf("%s.crt", name))
-	cache.Put(name, data)
+	certName := fmt.Sprintf("%s.crt", name)
+	keyPath := filepath.Join(constants.PKIDir, certName)
+	cache.Put(certName, data)
 	_, err := c.Do(cmdutil.NewWriteCmd(keyPath, string(data)))
 
 	return err

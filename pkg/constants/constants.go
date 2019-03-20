@@ -38,5 +38,13 @@ const (
 	MastersGroup = "system:masters"
 	NodesGroup   = "system:nodes"
 
-	NodeBootstrapTokenAuthGroup = "system:bootstrappers:kubeadm:default-node-token"
+	NodeBootstrapTokenAuthGroup = "system:bootstrappers:ocean:default-node-token"
+
+	// bootstrap
+	NodeKubeletBootstrap                                 = "ocean:kubelet-bootstrap"
+	NodeBootstrapperClusterRoleName                      = "system:node-bootstrapper"
+	NodeSelfCSRAutoApprovalClusterRoleName               = "system:certificates.k8s.io:certificatesigningrequests:selfnodeclient"
+	NodeAutoApproveBootstrapClusterRoleBinding           = "ocean:node-autoapprove-bootstrap"
+	CSRAutoApprovalClusterRoleName                       = "system:certificates.k8s.io:certificatesigningrequests:nodeclient"
+	NodeAutoApproveCertificateRotationClusterRoleBinding = "ocean:node-autoapprove-certificate-rotation"
 )

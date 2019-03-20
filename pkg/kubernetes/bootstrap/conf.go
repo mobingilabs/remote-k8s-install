@@ -28,7 +28,6 @@ func BuildBootstrapKubeletConf(cfg *config.Config, token string) error {
 	}
 
 	cache.Put("bootstrap-kubelet.conf", content)
-	fmt.Println(string(content))
 
 	return nil
 }

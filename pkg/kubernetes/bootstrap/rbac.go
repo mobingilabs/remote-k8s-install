@@ -12,12 +12,12 @@ import (
 func AllowBootstrapTokensToPostCSRs(client clientset.Interface) error {
 	roleBinding := &rbac.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: NodeKubeletBootstrap,
+			Name: constants.NodeKubeletBootstrap,
 		},
 		RoleRef: rbac.RoleRef{
 			APIGroup: rbac.GroupName,
 			Kind:     "ClusterRole",
-			Name:     NodeBootstrapperClusterRoleName,
+			Name:     constants.NodeBootstrapperClusterRoleName,
 		},
 		Subjects: []rbac.Subject{
 			{
@@ -37,12 +37,12 @@ func AllowBootstrapTokensToPostCSRs(client clientset.Interface) error {
 func AutoApproveNodeBootstrapTokens(client clientset.Interface) error {
 	roleBinding := &rbac.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: NodeAutoApproveBootstrapClusterRoleBinding,
+			Name: constants.NodeAutoApproveBootstrapClusterRoleBinding,
 		},
 		RoleRef: rbac.RoleRef{
 			APIGroup: rbac.GroupName,
 			Kind:     "ClusterRole",
-			Name:     CSRAutoApprovalClusterRoleName,
+			Name:     constants.CSRAutoApprovalClusterRoleName,
 		},
 		Subjects: []rbac.Subject{
 			{
@@ -62,12 +62,12 @@ func AutoApproveNodeBootstrapTokens(client clientset.Interface) error {
 func AutoApproveNodeCertificateRotation(client clientset.Interface) error {
 	roleBinding := &rbac.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: NodeAutoApproveCertificateRotationClusterRoleBinding,
+			Name: constants.NodeAutoApproveCertificateRotationClusterRoleBinding,
 		},
 		RoleRef: rbac.RoleRef{
 			APIGroup: rbac.GroupName,
 			Kind:     "ClusterRole",
-			Name:     NodeSelfCSRAutoApprovalClusterRoleName,
+			Name:     constants.NodeSelfCSRAutoApprovalClusterRoleName,
 		},
 		Subjects: []rbac.Subject{
 			{

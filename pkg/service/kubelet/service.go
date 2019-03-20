@@ -1,10 +1,20 @@
 package kubelet
 
-const serviceTemplate = `
+const serviceTemplate = `[Unit]
+Description=Kubernetes kubelet server
+Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+After=network.target
+
 [Service]
-Environment="KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf"
-Environment="KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml"
-ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS`
+ExecStart=/usr/local/bin/kubelet \
+  --config=/var/lib/kubelet/config.yaml \
+  --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf \
+  --pod-infra-container-image=registry.cn-beijing.aliyuncs.com/k8s_images/pause-amd64:3.1
+Rstart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target`
 
 // var/lib/kubelet/config.yaml
 // TOOD read from config

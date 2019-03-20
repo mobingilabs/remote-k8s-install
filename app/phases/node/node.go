@@ -47,7 +47,7 @@ func writeBootstrapConf(cfg *config.Config, c ssh.Client) error {
 	if !exists {
 		return errors.New("can not read bootstrap-kubelet.conf from cache")
 	}
-	cmdutil.NewWriteCmd(bootstrapConfFilename, content.(string))
+	c.Do(cmdutil.NewWriteCmd(bootstrapConfFilename, string(content.([]byte))))
 
 	return nil
 }

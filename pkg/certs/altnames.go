@@ -26,6 +26,7 @@ func getAPIServerAltNames(cfg *config.Config) (*certutil.AltNames, error) {
 	}
 
 	publicAddress := net.ParseIP(cfg.Masters[0].PublicIP)
+	privateAddress := net.ParseIP(cfg.Masters[0].PrivateIP)
 
 	// TODO fix up
 	/*
@@ -51,6 +52,7 @@ func getAPIServerAltNames(cfg *config.Config) (*certutil.AltNames, error) {
 			//internalAPIServerVirtualIP,
 			advertiseAddress,
 			publicAddress,
+			privateAddress,
 		},
 	}
 
