@@ -1,6 +1,7 @@
 # ocean
 
 **Note**: it is on developing and testing, so it is can't use for production.
+**Note**: we develop at dev branch,when test finish,we merge dev to master
 
 ## TODO
 - HA supported(now it is a just one master and one node)
