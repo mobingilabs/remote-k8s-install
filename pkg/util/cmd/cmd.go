@@ -19,7 +19,10 @@ func NewMkdirAllCmd(dir string) string {
 	return "mkdir -p " + dir
 }
 
-// TODO fix up
-func NewTarXCmd() string {
-	return "tar -zxvf "
+func NewTarXCmd(tgzName, dir string) string {
+	return "tar -zxvf " + tgzName + " -C " + dir
+}
+
+func NewCurlCmd(targetSite, filename string) string {
+	return "crul -L " + targetSite+filename + " -o /tmp/" + filename
 }

@@ -1,21 +1,30 @@
 package dependence
 
 import (
+	"mobingi/ocean/pkg/constants"
 	"mobingi/ocean/pkg/tools/machine"
+	cmdutil "mobingi/ocean/pkg/util/cmd"
 )
 
 // get from fileServer
+const (
+	masterTgzName = "master.tgz"
+	nodeTgzName   = "node.tgz"
+	cniTgzName    = "cni.tgz"
+	targetSite    = "localhost:8080/"
+)
+
 func getMasterBinCommands() machine.CommandList {
 	cl := machine.CommandList{}
 
 	// TODO from config
-	curlCmd := "curl -L localhost:3232/master"
+	curlCmd := cmdutil.NewCurlCmd(targetSite, masterTgzName)
 	curlCheck := func(output string) bool {
 		return true
 	}
 	cl.Add(curlCmd, curlCheck)
 
-	tarCmd := "tar -zcvf xxx -o dasdas"
+	tarCmd := cmdutil.NewTarXCmd(masterTgzName, constants.BinDir)
 	tarCheck := func(output string) bool {
 		return true
 	}
@@ -28,32 +37,13 @@ func getNodeBinCommands() machine.CommandList {
 	cl := machine.CommandList{}
 
 	// TODO from config
-	curlCmd := "curl -L localhost:3232/master"
+	curlCmd := cmdutil.NewCurlCmd(targetSite, nodeTgzName)
 	curlCheck := func(output string) bool {
 		return true
 	}
 	cl.Add(curlCmd, curlCheck)
 
-	tarCmd := "tar -zcvf xxx -o dasdas"
-	tarCheck := func(output string) bool {
-		return true
-	}
-	cl.Add(tarCmd, tarCheck)
-
-	return cl
-}
-
-func getCniBinCommands() machine.CommandList {
-	cl := machine.CommandList{}
-
-	// TODO from config
-	curlCmd := "curl -L localhost:3232/master"
-	curlCheck := func(output string) bool {
-		return true
-	}
-	cl.Add(curlCmd, curlCheck)
-
-	tarCmd := "tar -zcvf xxx -o dasdas"
+	tarCmd := cmdutil.NewTarXCmd(nodeTgzName, constants.BinDir)
 	tarCheck := func(output string) bool {
 		return true
 	}

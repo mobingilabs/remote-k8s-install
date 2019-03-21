@@ -7,6 +7,7 @@ const (
 	WorkDir     = "/etc/kubernetes"
 	PKIDir      = "/etc/kubernetes/pki"
 	ETCDDataDir = "/var/lib/etcd"
+	BinDir      = "/usr/local/bin"
 
 	// certs
 	CACertAndKeyBaseName = "ca"

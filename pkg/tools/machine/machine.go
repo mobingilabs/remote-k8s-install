@@ -24,6 +24,10 @@ func (cl *CommandList) Add(cmd string, check CheckFunc) {
 	*cl = append([]Command(*cl), command)
 }
 
+func (cl *CommandList) AddAnother(another CommandList) {
+	*cl = append([]Command(*cl), []Command(another)...)
+}
+
 type Command struct {
 	Cmd   string
 	Check CheckFunc
