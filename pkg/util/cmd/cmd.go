@@ -14,6 +14,7 @@ func NewSystemStartCmd(serviceName string) string {
 	return "systemctl daemon-reload && systemctl start " + serviceName
 }
 
+// when wrong, return err "Process exited with status 1"
 func NewMkdirAllCmd(dir string) string {
 	return "mkdir -p " + dir
 }

@@ -1,7 +1,6 @@
 package ssh
 
 import (
-	"strings"
 	"time"
 
 	stdssh "golang.org/x/crypto/ssh"
@@ -14,8 +13,6 @@ const (
 // Client is a conn to remote machine
 type Client interface {
 	Do(cmd string) (string, error)
-	DoWithoutOutput(cmd string) error
-
 	Close() error
 }
 
@@ -58,20 +55,6 @@ func (c *client) Do(cmd string) (string, error) {
 	}
 
 	return string(output), nil
-}
-
-func (c *client) DoWithoutOutput(cmd string) error {
-	sess, err := c.conn.NewSession()
-	if err != nil {
-		return err
-	}
-	defer sess.Close()
-	if strings.HasPrefix(cmd, "systemctl") {
-		//TODO test so we can get a proper time duration
-		time.Sleep(15 * time.Second)
-	}
-
-	return sess.Run(cmd)
 }
 
 func (c *client) Close() error {
