@@ -18,3 +18,8 @@ func NewSystemStartCmd(serviceName string) string {
 func NewMkdirAllCmd(dir string) string {
 	return "mkdir -p " + dir
 }
+
+// TODO fix up
+func NewTarXCmd() string {
+	return "tar -zxvf "
+}
