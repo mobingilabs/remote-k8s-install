@@ -1,23 +1,34 @@
 package kubelet
 
 const serviceTemplate = `[Unit]
-Description=Kubernetes kubelet server
-Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+Description= The Kubernetes Node Agent
+Documentation=https://github.com/kubernetes.io/docs
 After=network.target
 
 [Service]
-ExecStart=/usr/local/bin/kubelet \\
-  --config=/var/lib/kubelet/config.yaml \\
-  --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf \\
-  --pod-infra-container-image=registry.cn-beijing.aliyuncs.com/k8s_images/pause-amd64:3.1
+ExecStart=/usr/local/bin/kubelet 
 Rstart=on-failure
 RestartSec=5
 
 [Install]
 WantedBy=multi-user.target`
 
+const servicedDir = "/etc/systemd/system/kubelet.service.d"
+const servicedName = "10-ocean.conf"
+const servicedFileContent = `
+[Service]
+Environment="KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf"
+Environment="KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml"
+EnvironmentFile=-/var/lib/kubelet/ocean-flags.env
+EnvironmentFile=-/etc/sysconfig/kubelet
+ExecStart=
+ExecStart=/usr/local/bin/kubelet \$KUBELET_KUBECONFIG_ARGS \$KUBELET_CONFIG_ARGS
+`
+
 // var/lib/kubelet/config.yaml
 // TOOD read from config
+const configDir = "var/lib/kubelet"
+const configName = "config.yaml"
 const configYAML = `
 address: 0.0.0.0
 apiVersion: kubelet.config.k8s.io/v1beta1
@@ -91,3 +102,6 @@ serializeImagePulls: true
 streamingConnectionIdleTimeout: 4h0m0s
 syncFrequency: 1m0s
 volumeStatsAggPeriod: 1m0s`
+
+const flagsFileName = "ocean-flags.env"
+const flagsContent = `KUBELET_KUBEADM_ARGS=--cgroup-driver=systemd --network-plugin=cni --pod-infra-container-image=k8s.gcr.io/pause:3.1`

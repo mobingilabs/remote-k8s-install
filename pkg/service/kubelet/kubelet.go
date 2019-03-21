@@ -27,8 +27,12 @@ func Start(c ssh.Client, cfg *config.Config) error {
 func writeServiceFile(c ssh.Client, serviceData string) error {
 	serviceFilepath := filepath.Join(constants.ServiceDir, constants.KubeletService)
 
-	cmd := cmdutil.NewWriteCmd(serviceFilepath, serviceData)
-	c.Do(cmd)
+	c.Do(cmdutil.NewWriteCmd(serviceFilepath, serviceData))
+	c.Do(cmdutil.NewMkdirAllCmd(servicedDir))
+	c.Do(cmdutil.NewWriteCmd(filepath.Join(servicedDir, servicedName), servicedFileContent))
+	c.Do(cmdutil.NewMkdirAllCmd(configDir))
+	c.Do(cmdutil.NewWriteCmd(filepath.Join(configDir, configName), configYAML))
+	c.Do(cmdutil.NewWriteCmd(filepath.Join(configDir, flagsFileName), flagsContent))
 
 	return nil
 }

@@ -21,7 +21,6 @@ func BuildBootstrapKubeletConf(cfg *config.Config, token string) error {
 	}
 
 	clientConfig := kubeconfigutil.CreateWithToken(masterEndpoint, "kubernetes", constants.NodeBootstrapTokenAuthGroup, caCert.([]byte), token)
-
 	content, err := clientcmd.Write(*clientConfig)
 	if err != nil {
 		return err
