@@ -5,25 +5,31 @@ import (
 
 	"mobingi/ocean/pkg/config"
 	"mobingi/ocean/pkg/constants"
-	"mobingi/ocean/pkg/ssh"
+	"mobingi/ocean/pkg/tools/machine"
 	cmdutil "mobingi/ocean/pkg/util/cmd"
 	templateutil "mobingi/ocean/pkg/util/template"
 )
 
-func Start(c ssh.Client, cfg *config.Config) error {
+func CommandList(cfg *config.Config) (machine.CommandList, error) {
+	cl := machine.CommandList{}
 	serviceData, err := getServiceFile(cfg)
 	if err != nil {
-		return err
-	}
-	if err := writeServiceFile(c, string(serviceData)); err != nil {
-		return err
+		return nil, err
 	}
 
-	if err := startService(c); err != nil {
-		return err
+	writeCmd := cmdutil.NewWriteCmd(filepath.Join(constants.ServiceDir, constants.EtcdService), string(serviceData))
+	writeCheck := func(output string) bool {
+		return true
 	}
+	cl.Add(writeCmd, writeCheck)
 
-	return nil
+	startCmd := cmdutil.NewSystemStartCmd(constants.EtcdService)
+	startCheck := func(output string) bool {
+		return true
+	}
+	cl.Add(startCmd, startCheck)
+
+	return cl, nil
 }
 
 func getServiceFile(cfg *config.Config) ([]byte, error) {
@@ -33,21 +39,4 @@ func getServiceFile(cfg *config.Config) ([]byte, error) {
 	}
 
 	return data, nil
-}
-
-func writeServiceFile(c ssh.Client, serviceData string) error {
-	serviceFilepath := filepath.Join(constants.ServiceDir, constants.EtcdService)
-
-	cmd := cmdutil.NewWriteCmd(serviceFilepath, serviceData)
-	// TODO check output exec result, ok or false
-	c.Do(cmd)
-
-	return nil
-}
-
-func startService(c ssh.Client) error {
-	cmd := cmdutil.NewSystemStartCmd(constants.EtcdService)
-	c.DoWithoutOutput(cmd)
-
-	return nil
 }

@@ -4,8 +4,6 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
-	"mobingi/ocean/pkg/constants"
-	"path/filepath"
 
 	"github.com/pkg/errors"
 
@@ -15,9 +13,6 @@ import (
 	kubeadmconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 
 	"mobingi/ocean/pkg/config"
-	"mobingi/ocean/pkg/ssh"
-	"mobingi/ocean/pkg/tools/cache"
-	cmdutil "mobingi/ocean/pkg/util/cmd"
 	kubeconfigutil "mobingi/ocean/pkg/util/kubeconfig"
 	pkiutil "mobingi/ocean/pkg/util/pki"
 )
@@ -34,17 +29,10 @@ type clientCertAuth struct {
 	Organizations []string
 }
 
-func CreateKubeconfigFiles(c ssh.Client, cfg *config.Config) error {
-	specs, err := getKubeconfigSpecs(c, cfg)
+func CreateKubeconfigFiles(cfg *config.Config, caCert *x509.Certificate, caKey *rsa.PrivateKey) (map[string][]byte, error) {
+	specs, err := getKubeconfigSpecs(cfg, caCert, caKey)
 	if err != nil {
-		return err
-	}
-
-	//TODO other location just mkdir all once
-	cmd := cmdutil.NewMkdirAllCmd(constants.WorkDir)
-	_, err = c.Do(cmd)
-	if err != nil {
-		return err
+		return nil, err
 	}
 
 	kubeconfigFileNames := []string{
@@ -53,33 +41,27 @@ func CreateKubeconfigFiles(c ssh.Client, cfg *config.Config) error {
 		kubeadmconstants.SchedulerKubeConfigFileName,
 	}
 
+	kubeconfs := make(map[string][]byte)
+
 	for _, kubeconfigFileName := range kubeconfigFileNames {
 		spec, exists := specs[kubeconfigFileName]
 		if !exists {
-			return errors.Errorf("could't retrive kubeconfigSpec for %s", kubeconfigFileName)
+			return nil, errors.Errorf("could't retrive kubeconfigSpec for %s", kubeconfigFileName)
 		}
 
 		config, err := buildKubeconfigFromSpec(spec, cfg.ClusterName)
 		if err != nil {
-			return err
+			return nil, err
 		}
-
-		if err := writeKubeconfigFile(c, constants.WorkDir, kubeconfigFileName, config); err != nil {
-			return errors.Wrap(err, "kubeconfig")
-		}
+		content, err := clientcmd.Write(*config)
+		kubeconfs[kubeconfigFileName] = content
 	}
 
-	return nil
+	return kubeconfs, nil
 }
 
-func getKubeconfigSpecs(c ssh.Client, cfg *config.Config) (map[string]*kubeconfigSpec, error) {
-	// TODO load from cache
-	caCert, caKey, err := pkiutil.TryLoadCertAndKeyFromDisk(c, constants.PKIDir, kubeadmconstants.CACertAndKeyBaseName)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO port from config
+func getKubeconfigSpecs(cfg *config.Config, caCert *x509.Certificate, caKey *rsa.PrivateKey) (map[string]*kubeconfigSpec, error) {
+	// TODO get port from config
 	publicEndpoint := fmt.Sprintf("https://%s:6443", cfg.AdvertiseAddress)
 	privateEndpoint := fmt.Sprintf("https://%s:6443", cfg.Masters[0].PrivateIP)
 
@@ -135,22 +117,4 @@ func buildKubeconfigFromSpec(spec *kubeconfigSpec, clusterName string) (*clientc
 	), nil
 
 	return nil, nil
-}
-
-func writeKubeconfigFile(c ssh.Client, dir, name string, cfg *clientcmdapi.Config) error {
-	content, err := clientcmd.Write(*cfg)
-	if err != nil {
-		return err
-	}
-
-	filename := filepath.Join(dir, name)
-	cache.Put(name, content)
-
-	cmd := cmdutil.NewWriteCmd(filename, string(content))
-	_, err = c.Do(cmd)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

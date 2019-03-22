@@ -5,49 +5,38 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"mobingi/ocean/pkg/log"
-	"path/filepath"
 
 	"mobingi/ocean/pkg/constants"
-	"mobingi/ocean/pkg/ssh"
 	"mobingi/ocean/pkg/tools/cache"
-	cmdutil "mobingi/ocean/pkg/util/cmd"
 )
 
-func writeCertAndKey(c ssh.Client, name string, cert *x509.Certificate, key *rsa.PrivateKey) error {
+func writeCertAndKey(baseName string, cert *x509.Certificate, key *rsa.PrivateKey) {
 	keyBlock := pem.Block{
 		Type:  RSAPrivateKeyBlockType,
 		Bytes: x509.MarshalPKCS1PrivateKey(key),
 	}
 	keyData := pem.EncodeToMemory(&keyBlock)
-	if err := writeKey(c, name, keyData); err != nil {
-		return err
-	}
+	writeKey(baseName, keyData)
 
 	certBlock := pem.Block{
 		Type:  CertificateBlockType,
 		Bytes: cert.Raw,
 	}
 	certData := pem.EncodeToMemory(&certBlock)
-	if err := writeCert(c, name, certData); err != nil {
-		return err
-	}
-	log.Infof("write cert and key:%s sucessed", name)
-
-	return nil
+	writeCert(baseName, certData)
 }
 
-func writePrivateKey(c ssh.Client, keyPath string, key *rsa.PrivateKey) error {
+func writePrivateKey(baseName string, key *rsa.PrivateKey) {
 	block := pem.Block{
 		Type:  RSAPrivateKeyBlockType,
 		Bytes: x509.MarshalPKCS1PrivateKey(key),
 	}
 	data := pem.EncodeToMemory(&block)
 
-	return writeKey(c, keyPath, data)
+	writeKey(baseName, data)
 }
 
-func writePublicKey(c ssh.Client, keyPath string, key *rsa.PublicKey) error {
+func writePublicKey(keyPath string, key *rsa.PublicKey) error {
 	der, err := x509.MarshalPKIXPublicKey(key)
 	if err != nil {
 		return err
@@ -57,35 +46,67 @@ func writePublicKey(c ssh.Client, keyPath string, key *rsa.PublicKey) error {
 		Type:  PublicKeyBlockType,
 		Bytes: der,
 	}
-
 	data := pem.EncodeToMemory(&block)
 
-	return writePub(c, keyPath, data)
+	writePub(keyPath, data)
+
+	return nil
 }
 
-// writeKey writes the data to disk
-func writeKey(c ssh.Client, name string, data []byte) error {
-	keyPath := filepath.Join(constants.PKIDir, fmt.Sprintf("%s.key", name))
-	cache.Put(name, data)
-	cmd := cmdutil.NewWriteCmd(keyPath, string(data))
-	// TODO check output exec result, ok or false
-	_, err := c.Do(cmd)
-	return err
+// write put the pki data to cache
+func writeKey(baseName string, data []byte) {
+	name := fmt.Sprintf("%s.key", baseName)
+	cache.Put(constants.CertPrefix, name, data)
 }
 
-func writeCert(c ssh.Client, name string, data []byte) error {
-	certName := fmt.Sprintf("%s.crt", name)
-	keyPath := filepath.Join(constants.PKIDir, certName)
-	cache.Put(certName, data)
-	_, err := c.Do(cmdutil.NewWriteCmd(keyPath, string(data)))
-
-	return err
+func writeCert(baseName string, data []byte) {
+	name := fmt.Sprintf("%s.crt", baseName)
+	cache.Put(constants.CertPrefix, name, data)
 }
 
-func writePub(c ssh.Client, name string, data []byte) error {
-	keyPath := filepath.Join(constants.PKIDir, fmt.Sprintf("%s.pub", name))
-	cache.Put(name, data)
-	_, err := c.Do(cmdutil.NewWriteCmd(keyPath, string(data)))
+func writePub(baseName string, data []byte) {
+	name := fmt.Sprintf("%s.pub", baseName)
+	cache.Put(constants.CertPrefix, name, data)
+}
 
-	return err
+func pathForCert(baseName string) string {
+	return fmt.Sprintf("%s.crt", baseName)
+}
+
+func pathForKey(baseName string) string {
+	return fmt.Sprintf("%s.key", baseName)
+}
+
+func pathForPub(baseName string) string {
+	return fmt.Sprintf("%s.pub", baseName)
+}
+
+func certToByte(cert *x509.Certificate) []byte {
+	certBlock := pem.Block{
+		Type:  CertificateBlockType,
+		Bytes: cert.Raw,
+	}
+	return pem.EncodeToMemory(&certBlock)
+}
+
+func keyToByte(key *rsa.PrivateKey) []byte {
+	keyBlock := pem.Block{
+		Type:  RSAPrivateKeyBlockType,
+		Bytes: x509.MarshalPKCS1PrivateKey(key),
+	}
+	return pem.EncodeToMemory(&keyBlock)
+}
+
+func pubKeyToByte(key *rsa.PublicKey) ([]byte, error) {
+	der, err := x509.MarshalPKIXPublicKey(key)
+	if err != nil {
+		return nil, err
+	}
+
+	block := pem.Block{
+		Type:  PublicKeyBlockType,
+		 Bytes: der,
+	}
+	data := pem.EncodeToMemory(&block)
+	return data, nil
 }

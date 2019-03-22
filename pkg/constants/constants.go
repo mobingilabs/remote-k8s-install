@@ -48,4 +48,8 @@ const (
 	NodeAutoApproveBootstrapClusterRoleBinding           = "ocean:node-autoapprove-bootstrap"
 	CSRAutoApprovalClusterRoleName                       = "system:certificates.k8s.io:certificatesigningrequests:nodeclient"
 	NodeAutoApproveCertificateRotationClusterRoleBinding = "ocean:node-autoapprove-certificate-rotation"
+
+	// cache
+	CertPrefix = "cert"
+	KubeconfPrefix = "kubeconf"
 )

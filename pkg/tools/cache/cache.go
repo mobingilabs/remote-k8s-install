@@ -4,24 +4,31 @@ import (
 	"sync"
 )
 
-var memoryCache map[string]interface{}
+var memoryCache map[string]map[string]interface{}
 var mutex sync.RWMutex
 
 func init() {
-	memoryCache = make(map[string]interface{})
+	memoryCache = make(map[string]map[string]interface{})
 }
 
-func Get(key string) (interface{}, bool) {
+func GetMap(prefix string) (interface{}, bool) {
 	mutex.RLock()
 	defer mutex.RUnlock()
-	v, exists := memoryCache[key]
+	v, exists := memoryCache[prefix]
 	return v, exists
 }
 
-func Put(key string, value interface{}) bool {
+func GetOne(prefix, key string) (interface{}, bool) {
+	mutex.RLock()
+	defer mutex.RUnlock()
+	v, exists := memoryCache[prefix][key]
+	return v, exists
+}
+
+func Put(prefix, key string, value interface{}) bool {
 	mutex.Lock()
 	defer mutex.Unlock()
-	_, exists := memoryCache[key]
-	memoryCache[key] = value
+	_, exists := memoryCache[prefix][key]
+	memoryCache[prefix][key] = value
 	return exists
 }

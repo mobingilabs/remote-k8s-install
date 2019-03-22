@@ -1,6 +1,7 @@
 package master
 
 import (
+	"mobingi/ocean/pkg/dependence"
 	"errors"
 	"path/filepath"
 
@@ -16,21 +17,26 @@ import (
 	"mobingi/ocean/pkg/service"
 	"mobingi/ocean/pkg/ssh"
 	"mobingi/ocean/pkg/tools/cache"
+	"mobingi/ocean/pkg/tools/machine"
 	cmdutil "mobingi/ocean/pkg/util/cmd"
 )
 
 func Start(cfg *config.Config) error {
-	sshClient, err := ssh.NewClient(cfg.Masters[0].PublicIP, cfg.Masters[0].User, cfg.Masters[0].Password)
+	machine, err := machine.NewMachine(cfg.Masters[0].PublicIP, cfg.Masters[0].User, cfg.Masters[0].Password)
 	if err != nil {
 		log.Error(err)
 		return err
 	}
-	log.Info("ssh client dial sucessed")
-	defer sshClient.Close()
+	defer machine.DisConnect()
+	log.Info("machine init")
 
-	prepare(sshClient)
-	log.Info("master prepare sucessed")
-
+	machine.AddCommandList(dependence.GetMasterDirCommands())
+	if err := machine.Run(); err != nil {
+		log.Error(err)
+		return err
+	}
+	log.Info("master create dirs")
+	
 	if err := certs.CreatePKIAssets(sshClient, cfg); err != nil {
 		return err
 	}
@@ -88,6 +94,7 @@ func newK8sClientFromConf(conf []byte) (clientset.Interface, error) {
 	return client, nil
 }
 
+// TODO list to init
 func mkdirAll(c ssh.Client) {
 	c.Do(cmdutil.NewMkdirAllCmd(constants.WorkDir))
 	c.Do(cmdutil.NewMkdirAllCmd(constants.PKIDir))
@@ -96,7 +103,6 @@ func mkdirAll(c ssh.Client) {
 }
 
 // TODO
-// docker install,set env,download binary...
 func prepare(c ssh.Client) {
 	mkdirAll(c)
 }

@@ -15,9 +15,6 @@ import (
 	"time"
 
 	certutil "k8s.io/client-go/util/cert"
-
-	"mobingi/ocean/pkg/ssh"
-	cmdutil "mobingi/ocean/pkg/util/cmd"
 )
 
 const (
@@ -30,51 +27,6 @@ const (
 	rsaKeySize   = 2048
 	duration365d = time.Hour * 24 * 365
 )
-
-// TryLoadCertAndKeyFromDisk get cert and key from remote server
-func TryLoadCertAndKeyFromDisk(c ssh.Client, pkiPath, name string) (*x509.Certificate, *rsa.PrivateKey, error) {
-	cert, err := tryLoadCertFromDisk(c, pkiPath, name)
-	if err != nil {
-		return nil, nil, err
-	}
-	key, err := tryLoadKeyFromDisk(c, pkiPath, name)
-	if err != nil {
-		return nil, nil, err
-	}
-	return cert, key, nil
-}
-
-// TODO change name,now it is load from a store(cache or sql)
-func tryLoadCertFromDisk(c ssh.Client, pkiPath, name string) (*x509.Certificate, error) {
-	certPath := pathForCert(pkiPath, name)
-	cmd := cmdutil.NewReadCmd(certPath)
-	content, err := c.Do(cmd)
-	if err != nil {
-		return nil, err
-	}
-	certs, err := certutil.ParseCertsPEM([]byte(content))
-	if err != nil {
-		return nil, err
-	}
-
-	return certs[0], nil
-}
-
-func tryLoadKeyFromDisk(c ssh.Client, pkiPath, name string) (*rsa.PrivateKey, error) {
-	keyPath := pathForKey(pkiPath, name)
-	cmd := cmdutil.NewReadCmd(keyPath)
-	content, err := c.Do(cmd)
-	if err != nil {
-		return nil, err
-	}
-
-	key, err := parsePrivateKeyPEM([]byte(content))
-	if err != nil {
-		return nil, err
-	}
-
-	return key, nil
-}
 
 // TODO duplicate with certs/util.go
 func pathForCert(pkiPath, name string) string {

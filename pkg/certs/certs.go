@@ -9,14 +9,13 @@ import (
 	"fmt"
 	"math"
 	"math/big"
-	"mobingi/ocean/pkg/constants"
 	"time"
 
 	"github.com/pkg/errors"
 	certutil "k8s.io/client-go/util/cert"
 
 	"mobingi/ocean/pkg/config"
-	"mobingi/ocean/pkg/ssh"
+	"mobingi/ocean/pkg/constants"
 )
 
 const (
@@ -30,34 +29,35 @@ const (
 	duration365d = time.Hour * 24 * 365
 )
 
-// CreatePKIAssets will create and write to disk all PKI assets necessary to establish the control plane.
-// If the PKI assets already exists in the target folder, they are used only if evaluated equal; otherwise an error is returned.
-func CreatePKIAssets(c ssh.Client, cfg *config.Config) error {
+func NewPKIAssets(cfg *config.Config) (map[string]interface{}, error) {
 	certTree, err := getDefaultCertList().asMap().certTree()
 	if err != nil {
 		return err
 	}
-	if err := certTree.createTree(c, cfg); err != nil {
+	certs, err := certTree.createTree(cfg)
+	if err != nil {
 		return errors.Wrap(err, "error creating PKI assets")
 	}
 
-	// Service accounts are not x509 certs, so handled separately
-	return createServiceAccountKeyAndPublicKeyFiles(c)
+	privateKey, err := newPrivateKey()
+	if err != nil {
+		return nil, err
+	}
+	certs[pathForKey(constants.ServiceAccountKeyBaseName)] = keyToByte(privateKey)
+	certs[pathForPub(constants.ServiceAccountKeyBaseName)] = pubKeyToByte(privateKey.PublicKey)
+
+	return certs, nil
 }
 
 // CreateServiceAccountKeyAndPublicKeyFiles create a new public/private key files for signing service account users.
 // If the sa public/private key files already exists in the target folder, they are used only if evaluated equals; otherwise an error is returned.
-func createServiceAccountKeyAndPublicKeyFiles(c ssh.Client) error {
+func createServiceAccountKeyAndPublicKeyFiles() (*rsa.PrivateKey, err) {
 	privateKey, err := newPrivateKey()
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	if err := writePrivateKey(c, constants.ServiceAccountKeyBaseName, privateKey); err != nil {
-		return err
-	}
-
-	return writePublicKey(c, constants.ServiceAccountKeyBaseName, &privateKey.PublicKey)
+	writePrivateKey(constants.ServiceAccountKeyBaseName, privateKey)
+	return writePublicKey(constants.ServiceAccountKeyBaseName, &privateKey.PublicKey)
 }
 
 func newPrivateKey() (*rsa.PrivateKey, error) {

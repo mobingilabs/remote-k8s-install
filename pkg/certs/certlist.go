@@ -26,7 +26,6 @@ import (
 	kubeadmconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 
 	"mobingi/ocean/pkg/config"
-	"mobingi/ocean/pkg/ssh"
 )
 
 type configMutatorsFunc func(*config.Config, *certutil.Config) error
@@ -53,23 +52,23 @@ func (c *cert) getConfig(cfg *config.Config) (*certutil.Config, error) {
 	return &c.config, nil
 }
 
-func (c *cert) newCertAndKeyFromCA(sshC ssh.Client, cfg *config.Config, caCert *x509.Certificate, caKey *rsa.PrivateKey) error {
+func (c *cert) newCertAndKeyFromCA(cfg *config.Config, caCert *x509.Certificate, caKey *rsa.PrivateKey) (*x509.Certificate, *rsa.PrivateKey, error) {
 	certSpec, err := c.getConfig(cfg)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
 	key, err := newPrivateKey()
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
 	cert, err := newSignedCert(certSpec, key, caCert, caKey)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
-	return writeCertAndKey(sshC, c.BaseName, cert, key)
+	return cert, key, nil
 }
 
 // CertificateTree is represents a one-level-deep tree, mapping a CA to the certs that depend on it.
@@ -77,29 +76,32 @@ type ceretificates []*cert
 type certificateTree map[*cert]certificates
 
 // CreateTree creates the CAs, certs signed by the CAs, and writes them all to disk.
-func (t certificateTree) createTree(c ssh.Client, cfg *config.Config) error {
+func (t certificateTree) createTree(cfg *config.Config) (map[string][]byte, error) {
+	certs := make(map[string][]byte)
+
 	for ca, leaves := range t {
 		certSpec, err := ca.getConfig(cfg)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		caCert, caKey, err := newCACertAndKey(certSpec)
 		if err != nil {
-			return err
+			return nil, err
 		}
-
-		if err := writeCertAndKey(c, ca.BaseName, caCert, caKey); err != nil {
-			return err
-		}
+		certs[pathForCert(ca.BaseName)] = pkiutil.EncodeCertPEM(caCert)
+		certs[pathForKey(ca.BaseName)] = pkiutil.EncodePrivateKeyPem(caKey)
 
 		for _, leaf := range leaves {
-			if err := leaf.newCertAndKeyFromCA(c, cfg, caCert, caKey); err != nil {
-				return err
-			}
+		cert, key, err := leaf.newCertAndKeyFromCA(cfg, caCert, caKey)
+		if err != nil {
+				return nil, err
 		}
+		certs[pathForCert(leaf.BaseName)] = pkiutil.EncodeCertPEM(cert)
+		certs[pathForKey(leaf.BaseName)] = pkiutil.EncodePrivateKeyPem(key)
 	}
-	return nil
+
+	return certs, nil
 }
 
 // CertificateMap is a flat map of certificates, keyed by Name.
@@ -284,5 +286,4 @@ func setCommonNameToNodeName() configMutatorsFunc {
 		cc.CommonName = "etcd0"
 		return nil
 	}
-
 }
