@@ -2,52 +2,48 @@ package node
 
 import (
 	"errors"
-	"path/filepath"
 
 	"mobingi/ocean/pkg/config"
 	"mobingi/ocean/pkg/constants"
+	"mobingi/ocean/pkg/dependence"
+	"mobingi/ocean/pkg/kubernetes/service/kubelet"
 	"mobingi/ocean/pkg/log"
-	"mobingi/ocean/pkg/service/kubelet"
-	"mobingi/ocean/pkg/ssh"
 	"mobingi/ocean/pkg/tools/cache"
-	cmdutil "mobingi/ocean/pkg/util/cmd"
-)
+	"mobingi/ocean/pkg/tools/machine")
 
 func Start(cfg *config.Config) error {
-	client, err := ssh.NewClient(cfg.Nodes[0].PublicIP, cfg.Nodes[0].User, cfg.Nodes[0].Password)
-	defer client.Close()
+	machine, err := machine.NewMachine(cfg.Nodes[0].PublicIP, cfg.Nodes[0].User, cfg.Nodes[0].Password)
 	if err != nil {
-		log.Errorf("new ssh client err:%s", err.Error())
+		log.Error(err)
 		return err
 	}
-	log.Info("new ssh client sucessed")
+	defer machine.DisConnect()
+	log.Info("machine init")
 
-	mkdirAll(client)
-	log.Info("mkdir sucessed")
-
-	if err := writeBootstrapConf(cfg, client); err != nil {
-		log.Errorf("write bootstrap conf err:%s", err.Error())
+	machine.AddCommandList(dependence.GetNodeDirCommands())
+	if err := machine.Run(); err != nil {
+		log.Error(err)
 		return err
 	}
-	log.Info("write bootstrap conf sucessed")
+	log.Info("node create dirs")
 
-	if err := kubelet.Start(client, cfg); err != nil {
-		log.Errorf("start kubelet err:%s", err.Error())
-		return err
-	}
-	log.Info("kubelet start sucessed")
-
-	return nil
-}
-
-func writeBootstrapConf(cfg *config.Config, c ssh.Client) error {
-	// TODO make bootstarp-kubelet.conf to constants
-	bootstrapConfFilename := filepath.Join(constants.WorkDir, "bootstrap-kubelet.conf")
-	content, exists := cache.Get("bootstrap-kubelet.conf")
+	bootstrapConfByte, exists := cache.GetOne(constants.KubeconfPrefix, constants.BootstrapKubeletConfName)
 	if !exists {
-		return errors.New("can not read bootstrap-kubelet.conf from cache")
+		return errors.New("bootstarp conf not in cache")
 	}
-	c.Do(cmdutil.NewWriteCmd(bootstrapConfFilename, string(content.([]byte))))
+	machine.AddCommandList(getWriteBootstrapCommands(bootstrapConfByte.([]byte)))
+	if err := machine.Run(); err != nil {
+		log.Error(err)
+		return err
+	}
+	log.Info("write bootstrap conf to disk")
+
+	machine.AddCommandList(kubelet.CommandList(cfg))
+	if err := machine.Run(); err != nil {
+		log.Error(err)
+		return err
+	}
+	log.Info("kubelet start")
 
 	return nil
 }

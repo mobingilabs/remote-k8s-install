@@ -28,7 +28,7 @@ func GetMasterDirCommands() machine.CommandList {
 }
 
 // TODO now it is copy from getMasterDir, not true
-func getNodeDirCommands() machine.CommandList {
+func GetNodeDirCommands() machine.CommandList {
 	cl := machine.CommandList{}
 	mkdirCheck := func(output string) bool {
 		return true

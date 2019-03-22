@@ -29,17 +29,25 @@ const (
 )
 
 // TODO duplicate with certs/util.go
-func pathForCert(pkiPath, name string) string {
+func PathForCert(pkiPath, name string) string {
 	return filepath.Join(pkiPath, fmt.Sprintf("%s.crt", name))
 }
 
-func pathForKey(pkiPath, name string) string {
+func PathForKey(pkiPath, name string) string {
 	return filepath.Join(pkiPath, fmt.Sprintf("%s.key", name))
 }
 
-func parsePrivateKeyPEM(data []byte) (*rsa.PrivateKey, error) {
+func NameForCert(baseName string) string {
+	return fmt.Sprintf("%s.crt", baseName)
+}
+
+func NameForKey(baseName string) string {
+	return fmt.Sprintf("%s.key", baseName)
+}
+
+func ParsePrivateKeyPEM(data []byte) (*rsa.PrivateKey, error) {
 	privateKeyPemBlock, _ := pem.Decode(data)
-	if parsePrivateKeyPEM == nil {
+	if privateKeyPemBlock == nil {
 		return nil, errors.New("can not parse key")
 	}
 	if privateKeyPemBlock.Type != RSAPrivateKeyBlockType {
@@ -51,6 +59,16 @@ func parsePrivateKeyPEM(data []byte) (*rsa.PrivateKey, error) {
 	}
 
 	return key, nil
+}
+
+func ParseCertPEM(data []byte) (*x509.Certificate, error) {
+	block, _ := pem.Decode(data)
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return cert, nil
 }
 
 func NewCertAndKeyFromCA(caCert *x509.Certificate, caKey *rsa.PrivateKey, certSpec *certutil.Config) (*x509.Certificate, *rsa.PrivateKey, error) {

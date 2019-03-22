@@ -13,7 +13,7 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target`
 
-const servicedDir = "/etc/systemd/system/kubelet.service.d"
+const servicedDir = "kubelet.service.d"
 const servicedName = "10-ocean.conf"
 const servicedFileContent = `
 [Service]
@@ -27,7 +27,7 @@ ExecStart=/usr/local/bin/kubelet \$KUBELET_KUBECONFIG_ARGS \$KUBELET_CONFIG_ARGS
 
 // var/lib/kubelet/config.yaml
 // TOOD read from config
-const configDir = "var/lib/kubelet"
+const configDir = "/var/lib/kubelet"
 const configName = "config.yaml"
 const configYAML = `
 address: 0.0.0.0

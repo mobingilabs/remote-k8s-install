@@ -29,14 +29,14 @@ const (
 	duration365d = time.Hour * 24 * 365
 )
 
-func NewPKIAssets(cfg *config.Config) (map[string]interface{}, error) {
+func CreatePKIAssets(cfg *config.Config) (map[string][]byte, error) {
 	certTree, err := getDefaultCertList().asMap().certTree()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	certs, err := certTree.createTree(cfg)
 	if err != nil {
-		return errors.Wrap(err, "error creating PKI assets")
+		return nil, errors.Wrap(err, "error creating PKI assets")
 	}
 
 	privateKey, err := newPrivateKey()
@@ -44,20 +44,13 @@ func NewPKIAssets(cfg *config.Config) (map[string]interface{}, error) {
 		return nil, err
 	}
 	certs[pathForKey(constants.ServiceAccountKeyBaseName)] = keyToByte(privateKey)
-	certs[pathForPub(constants.ServiceAccountKeyBaseName)] = pubKeyToByte(privateKey.PublicKey)
-
-	return certs, nil
-}
-
-// CreateServiceAccountKeyAndPublicKeyFiles create a new public/private key files for signing service account users.
-// If the sa public/private key files already exists in the target folder, they are used only if evaluated equals; otherwise an error is returned.
-func createServiceAccountKeyAndPublicKeyFiles() (*rsa.PrivateKey, err) {
-	privateKey, err := newPrivateKey()
+	pubKeyByte, err := pubKeyToByte(&privateKey.PublicKey)
 	if err != nil {
 		return nil, err
 	}
-	writePrivateKey(constants.ServiceAccountKeyBaseName, privateKey)
-	return writePublicKey(constants.ServiceAccountKeyBaseName, &privateKey.PublicKey)
+	certs[pathForPub(constants.ServiceAccountKeyBaseName)] = pubKeyByte
+
+	return certs, nil
 }
 
 func newPrivateKey() (*rsa.PrivateKey, error) {

@@ -26,6 +26,7 @@ import (
 	kubeadmconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 
 	"mobingi/ocean/pkg/config"
+	pkiutil "mobingi/ocean/pkg/util/pki"
 )
 
 type configMutatorsFunc func(*config.Config, *certutil.Config) error
@@ -90,15 +91,16 @@ func (t certificateTree) createTree(cfg *config.Config) (map[string][]byte, erro
 			return nil, err
 		}
 		certs[pathForCert(ca.BaseName)] = pkiutil.EncodeCertPEM(caCert)
-		certs[pathForKey(ca.BaseName)] = pkiutil.EncodePrivateKeyPem(caKey)
+		certs[pathForKey(ca.BaseName)] = pkiutil.EncodePrivateKeyPEM(caKey)
 
 		for _, leaf := range leaves {
-		cert, key, err := leaf.newCertAndKeyFromCA(cfg, caCert, caKey)
-		if err != nil {
+			cert, key, err := leaf.newCertAndKeyFromCA(cfg, caCert, caKey)
+			if err != nil {
 				return nil, err
+			}
+			certs[pathForCert(leaf.BaseName)] = pkiutil.EncodeCertPEM(cert)
+			certs[pathForKey(leaf.BaseName)] = pkiutil.EncodePrivateKeyPEM(key)
 		}
-		certs[pathForCert(leaf.BaseName)] = pkiutil.EncodeCertPEM(cert)
-		certs[pathForKey(leaf.BaseName)] = pkiutil.EncodePrivateKeyPem(key)
 	}
 
 	return certs, nil

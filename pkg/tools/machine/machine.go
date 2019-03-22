@@ -90,6 +90,7 @@ func (m *machine) Run() error {
 	if err := m.checkRunState(); err != nil {
 		return err
 	}
+	defer m.Reset()
 
 	atomic.StoreInt32(&m.run, 1)
 	defer atomic.StoreInt32(&m.run, 0)

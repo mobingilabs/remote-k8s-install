@@ -50,6 +50,9 @@ const (
 	NodeAutoApproveCertificateRotationClusterRoleBinding = "ocean:node-autoapprove-certificate-rotation"
 
 	// cache
-	CertPrefix = "cert"
+	CertPrefix     = "cert"
 	KubeconfPrefix = "kubeconf"
+
+	// fileName
+	BootstrapKubeletConfName = "bootstarp-kubelet.conf"
 )

@@ -29,7 +29,7 @@ type clientCertAuth struct {
 	Organizations []string
 }
 
-func CreateKubeconfigFiles(cfg *config.Config, caCert *x509.Certificate, caKey *rsa.PrivateKey) (map[string][]byte, error) {
+func CreateKubeconf(cfg *config.Config, caCert *x509.Certificate, caKey *rsa.PrivateKey) (map[string][]byte, error) {
 	specs, err := getKubeconfigSpecs(cfg, caCert, caKey)
 	if err != nil {
 		return nil, err
