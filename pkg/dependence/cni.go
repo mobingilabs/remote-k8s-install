@@ -1,17 +1,18 @@
 package dependence
 
 import (
+	"mobingi/ocean/pkg/config"
 	"mobingi/ocean/pkg/constants"
 	"mobingi/ocean/pkg/tools/machine"
 	cmdutil "mobingi/ocean/pkg/util/cmd"
 )
 
 // kubelet need cni plugin for network
-func getCniBinCommands() machine.CommandList {
+func getCniBinCommands(cfg *config.Config) machine.CommandList {
 	cl := machine.CommandList{}
 
 	// TODO from config
-	curlCmd := cmdutil.NewCurlCmd(targetSite, cniTgzName)
+	curlCmd := cmdutil.NewCurlCmd(cfg.DownloadBinSite, cniTgzName)
 	curlCheck := func(output string) bool {
 		return true
 	}
@@ -25,4 +26,3 @@ func getCniBinCommands() machine.CommandList {
 
 	return cl
 }
-

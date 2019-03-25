@@ -19,6 +19,10 @@ func TestLoadFromcfgFromFile(t *testing.T) {
 		log.Fatalf("cluster name parse failed,parsed to:%s\n", cfg.AdvertiseAddress)
 	}
 
+	if cfg.DownloadBinSite != "localhost:8080" {
+		log.Fatalf("download bin site parse failed, parsed to:%s\n", cfg.DownloadBinSite)
+	}
+
 	if cfg.Masters[0].PublicIP != "47.52.227.32" || cfg.Masters[0].PrivateIP != "192.168.1.1" ||
 		cfg.Masters[0].User != "root" || cfg.Masters[0].Password != "312313" {
 		log.Fatalf("cfg masters parsed failed,publicIP:%s,privateIP:%s,user:%s,password:%s",

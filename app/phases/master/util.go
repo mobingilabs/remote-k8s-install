@@ -1,6 +1,7 @@
 package master
 
 import (
+	"mobingi/ocean/pkg/config"
 	"path/filepath"
 
 	"mobingi/ocean/pkg/constants"
@@ -9,7 +10,11 @@ import (
 	cmdutil "mobingi/ocean/pkg/util/cmd"
 )
 
-// these function may be changed the other package
+const (
+	masterTgzName = "master.tgz"
+	nodeTgzName   = "node.tgz"
+	cniTgzName    = "cni.tgz"
+)
 
 func getWriteCertsCommand(certList map[string][]byte) machine.CommandList {
 	cl := machine.CommandList{}
@@ -29,6 +34,15 @@ func getWriteKubeconfsCommand(kubeconfs map[string][]byte) machine.CommandList {
 		cmd := cmdutil.NewWriteCmd(filepath.Join(constants.WorkDir, k), string(v))
 		cl.Add(cmd, checkutil.WriteCheck)
 	}
+
+	return cl
+}
+
+func getDownloadCommands(cfg *config.Config) machine.CommandList {
+	cl := machine.CommandList{}
+
+	//TODO name get from constatns, writeCheck change to curl check
+	cl.Add(cmdutil.NewCurlCmd(cfg.DownloadBinSite, "master.tgz"), checkutil.WriteCheck)
 
 	return cl
 }

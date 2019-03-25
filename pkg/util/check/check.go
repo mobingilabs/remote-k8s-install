@@ -8,3 +8,7 @@ func MkdirCheck(ouput string) bool {
 func WriteCheck(ouput string) bool {
 	return true
 }
+
+func SCPCheck(ouput string) bool {
+	return true
+}

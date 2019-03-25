@@ -39,6 +39,7 @@ type Machine interface {
 	Run() error
 	Reset() error
 	DisConnect() error
+	SCP(localPath, remotePath string) error
 }
 
 type machine struct {
@@ -114,7 +115,7 @@ func (m *machine) DisConnect() error {
 func (m *machine) docmdAndCheck(command Command) error {
 	output, err := m.c.Do(command.Cmd)
 	if err != nil {
-		return err
+		return fmt.Errorf("cmd:%s,err:%s", command.Cmd, err.Error())
 	}
 
 	if !command.Check(output) {
@@ -139,4 +140,12 @@ func (m *machine) checkRunState() error {
 	}
 
 	return nil
+}
+
+func (m *machine) SCP(localPath, remotePath string) error {
+	if err := m.checkRunState(); err != nil {
+		return err
+	}
+
+	return m.c.SCP(localPath, remotePath)
 }

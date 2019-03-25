@@ -2,6 +2,7 @@
 clusterName: kubernetes
 #loadbalancer address,for others access apiserver
 advertiseAddress: 192.168.1.7
+downloadBinSite: localhost:8080
 #master can be 3 or 5,suggest is 3
 masters:
   - publicIP: 47.52.227.32

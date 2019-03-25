@@ -10,3 +10,9 @@ rm /etc/systemd/system/kube-scheduler.service
 
 rm -rf /etc/kubernetes
 rm -rf /var/lib/etcd
+
+rm /etc/sysctl.d/k8s.conf
+rm /tmp/master.tgz
+rm /usr/local/bin/kube-apiserver
+rm /usr/local/bin/kube-controller-manager
+rm /usr/local/bin/kube-scheduler

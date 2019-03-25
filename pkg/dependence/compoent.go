@@ -1,6 +1,7 @@
 package dependence
 
 import (
+	"mobingi/ocean/pkg/config"
 	"mobingi/ocean/pkg/constants"
 	"mobingi/ocean/pkg/tools/machine"
 	cmdutil "mobingi/ocean/pkg/util/cmd"
@@ -33,11 +34,11 @@ func getMasterBinCommands() machine.CommandList {
 	return cl
 }
 
-func getNodeBinCommands() machine.CommandList {
+func getNodeBinCommands(cfg *config.Config) machine.CommandList {
 	cl := machine.CommandList{}
 
 	// TODO from config
-	curlCmd := cmdutil.NewCurlCmd(targetSite, nodeTgzName)
+	curlCmd := cmdutil.NewCurlCmd(cfg.DownloadBinSite, nodeTgzName)
 	curlCheck := func(output string) bool {
 		return true
 	}

@@ -39,9 +39,5 @@ func GetNodeDirCommands() machine.CommandList {
 	mkdirCmd = cmdutil.NewMkdirAllCmd(constants.PKIDir)
 	cl.Add(mkdirCmd, mkdirCheck)
 
-	mkdirCmd = cmdutil.NewMkdirAllCmd(filepath.Join(constants.PKIDir, "etcd"))
-	cl.Add(mkdirCmd, mkdirCheck)
-
-	
 	return cl
 }

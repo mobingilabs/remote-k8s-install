@@ -1,6 +1,10 @@
 package ssh
 
 import (
+	"fmt"
+	"io"
+	"mobingi/ocean/pkg/log"
+	"os"
 	"time"
 
 	stdssh "golang.org/x/crypto/ssh"
@@ -14,6 +18,7 @@ const (
 type Client interface {
 	Do(cmd string) (string, error)
 	Close() error
+	SCP(localPath, remotePath string) error
 }
 
 type client struct {
@@ -59,4 +64,47 @@ func (c *client) Do(cmd string) (string, error) {
 
 func (c *client) Close() error {
 	return c.conn.Close()
+}
+
+func (c *client) SCP(localPath, remotePath string) error {
+	fi, err := os.Stat(localPath)
+	log.Info(fi)
+	if err != nil {
+		return err
+	}
+
+	sess, err := c.conn.NewSession()
+	log.Info("sess new")
+	if err != nil {
+		return err
+	}
+	defer sess.Close()
+
+	w, err := sess.StdinPipe()
+	log.Info("ssh stdin")
+	if err != nil {
+		return err
+	}
+
+	if _, err := fmt.Fprintln(w, "C0644", fi.Size(), fi.Name()); err != nil {
+		return err
+	}
+	log.Info("write file meta info to remote")
+
+	f, err := os.Open(localPath)
+	log.Info("open local file")
+	if err != nil {
+		return err
+	}
+
+	if _, err := io.Copy(w, f); err != nil {
+		log.Infof("%s is copying to remote", fi.Name())
+		return err
+	}
+
+	if _, err := fmt.Fprintln(w, "\x00"); err != nil {
+		return nil
+	}
+
+	return nil
 }

@@ -9,6 +9,7 @@ import (
 type Config struct {
 	ClusterName      string `yaml:"clusterName"`
 	AdvertiseAddress string `yaml:"advertiseAddress"`
+	DownloadBinSite  string `yaml:"downloadBinSite"`
 
 	Masters []Machine
 	Nodes   []Machine

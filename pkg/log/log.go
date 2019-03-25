@@ -23,18 +23,18 @@ func Infof(format string, a ...interface{}) {
 }
 
 func Error(a ...interface{}) {
-	funcN, file, line, ok := runtime.Caller(2)
+	_, file, line, ok := runtime.Caller(1)
 	if ok {
-		logger.Printf("func:%s,file:%s,line:%s", funcN, file, line)
+		logger.Printf("file:%s,line:%d", file, line)
 	}
 
 	logger.Println(a...)
 }
 
 func Errorf(format string, a ...interface{}) {
-	funcN, file, line, ok := runtime.Caller(2)
+	_, file, line, ok := runtime.Caller(1)
 	if ok {
-		logger.Printf("func:%s,file:%s,line:%d", funcN, file, line)
+		logger.Printf("file:%s,line:%d", file, line)
 	}
 
 	logger.Printf(format, a...)

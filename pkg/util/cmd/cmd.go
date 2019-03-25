@@ -24,5 +24,5 @@ func NewTarXCmd(tgzName, dir string) string {
 }
 
 func NewCurlCmd(targetSite, filename string) string {
-	return "crul -L " + targetSite+filename + " -o /tmp/" + filename
+	return "curl -L " + targetSite+filename + " -o /tmp/" + filename
 }

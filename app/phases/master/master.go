@@ -4,8 +4,6 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
-	"mobingi/ocean/pkg/dependence"
-	"mobingi/ocean/pkg/log"
 
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -13,8 +11,10 @@ import (
 	"mobingi/ocean/pkg/certs"
 	"mobingi/ocean/pkg/config"
 	"mobingi/ocean/pkg/constants"
+	"mobingi/ocean/pkg/dependence"
 	"mobingi/ocean/pkg/kubeconfig"
 	"mobingi/ocean/pkg/kubernetes/bootstrap"
+	"mobingi/ocean/pkg/log"
 	"mobingi/ocean/pkg/tools/machine"
 	pkiutil "mobingi/ocean/pkg/util/pki"
 )
@@ -34,6 +34,20 @@ func Start(cfg *config.Config) error {
 		return err
 	}
 	log.Info("master create dirs")
+
+	machine.AddCommandList(getDownloadCommands(cfg))
+	if err := machine.Run(); err != nil {
+		log.Error(err)
+		return err
+	}
+	log.Info("master download sucess")
+
+	machine.AddCommandList(dependence.GetMasterSetCommands())
+	if err := machine.Run(); err != nil {
+		log.Error(err)
+		return err
+	}
+	log.Info("master set sucess")
 
 	certList, err := certs.CreatePKIAssets(cfg)
 	if err != nil {
