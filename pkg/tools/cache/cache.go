@@ -28,6 +28,9 @@ func GetOne(prefix, key string) (interface{}, bool) {
 func Put(prefix, key string, value interface{}) bool {
 	mutex.Lock()
 	defer mutex.Unlock()
+	if _, mapExists := memoryCache[prefix]; !mapExists {
+		memoryCache[prefix] = make(map[string]interface{})
+	}
 	_, exists := memoryCache[prefix][key]
 	memoryCache[prefix][key] = value
 	return exists

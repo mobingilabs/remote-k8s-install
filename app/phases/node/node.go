@@ -60,6 +60,13 @@ func Start(cfg *config.Config) error {
 	}
 	log.Info("write bootstrap conf to disk")
 
+	machine.AddCommandList(getWriteCacert())
+	if err := machine.Run(); err != nil {
+		log.Error(err)
+		return err
+	}
+	log.Info("write ca crt")
+
 	machine.AddCommandList(kubelet.CommandList(cfg))
 	if err := machine.Run(); err != nil {
 		log.Error(err)

@@ -1,9 +1,15 @@
 package master
 
 import (
+	"time"
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
+	"mobingi/ocean/pkg/kubernetes/service/etcd"
+	"mobingi/ocean/pkg/kubernetes/service/kubeapiserver"
+	"mobingi/ocean/pkg/kubernetes/service/kubecontrollermanager"
+	"mobingi/ocean/pkg/kubernetes/service/kubescheduler"
+	"mobingi/ocean/pkg/tools/cache"
 
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -54,13 +60,63 @@ func Start(cfg *config.Config) error {
 		log.Errorf("create pki asstes err:%s", err)
 		return err
 	}
-	log.Info("crate pki assestes")
+	log.Info("create pki assestes")
 	machine.AddCommandList(getWriteCertsCommand(certList))
 	if err := machine.Run(); err != nil {
 		log.Error(err)
 		return err
 	}
 	log.Info("write certs to disk")
+
+	cache.Put(constants.CertPrefix, "ca.crt", certList["ca.crt"])
+
+	etcdCommandList, err := etcd.CommandList(cfg)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	machine.AddCommandList(etcdCommandList)
+	if err := machine.Run(); err != nil {
+		log.Error(err)
+		return err
+	}
+	log.Info("etcd run")
+
+	kubeapiserverCommandList, err := kubeapiserver.CommandList(cfg)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	machine.AddCommandList(kubeapiserverCommandList)
+	if err := machine.Run(); err != nil {
+		log.Error(err)
+		return err
+	}
+	log.Info("kube-apiserver run")
+
+	kubecontrollermanagerCommandList, err := kubecontrollermanager.CommandList(cfg)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	machine.AddCommandList(kubecontrollermanagerCommandList)
+	if err := machine.Run(); err != nil {
+		log.Error(err)
+		return err
+	}
+	log.Info("kube-controller-manager run")
+
+	kubeschedulerCommandList, err := kubescheduler.CommandList(cfg)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	machine.AddCommandList(kubeschedulerCommandList)
+	if err := machine.Run(); err != nil {
+		log.Error(err)
+		return err
+	}
+	log.Info("kube-scheduler run")
 
 	caCert, caKey, err := getCaCertAndKey(certList)
 	if err != nil {
@@ -80,6 +136,7 @@ func Start(cfg *config.Config) error {
 	}
 	log.Info("write kubeconfs to disk")
 
+	time.Sleep(30 * time.Second)
 	k8sClient, err := newK8sClientFromConf(kubeconfs["admin.conf"])
 	if err != nil {
 		log.Errorf("crete k8s clinet err:%s", err.Error())
@@ -87,12 +144,14 @@ func Start(cfg *config.Config) error {
 	}
 	log.Info("new k8s client sucessed")
 
-	err = bootstrap.Bootstrap(k8sClient, cfg)
+	bootstrapConf, err := bootstrap.Bootstrap(k8sClient, cfg, certList["ca.crt"])
 	if err != nil {
 		log.Errorf("bootstrap err:%s", err.Error())
 		return err
 	}
 	log.Info("bootstrap done")
+
+	cache.Put(constants.KubeconfPrefix, constants.BootstrapKubeletConfName, bootstrapConf)
 
 	return nil
 }

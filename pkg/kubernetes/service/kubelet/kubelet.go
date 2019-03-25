@@ -43,7 +43,7 @@ func CommandList(cfg *config.Config) machine.CommandList {
 	}
 	cl.Add(writeCmd4, writeCheck4)
 
-	startCmd := cmdutil.NewSystemStartCmd(constants.KubeApiserverService)
+	startCmd := cmdutil.NewSystemStartCmd(constants.KubeletService)
 	startCheck := func(output string) bool {
 		return true
 	}

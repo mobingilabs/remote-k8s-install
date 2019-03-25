@@ -5,9 +5,9 @@ import (
 
 	"mobingi/ocean/pkg/constants"
 	"mobingi/ocean/pkg/tools/machine"
+	checkutil "mobingi/ocean/pkg/util/check"
 	cmdutil "mobingi/ocean/pkg/util/cmd"
 )
-
 
 func GetMasterDirCommands() machine.CommandList {
 	cl := machine.CommandList{}
@@ -16,14 +16,13 @@ func GetMasterDirCommands() machine.CommandList {
 	}
 	mkdirCmd := cmdutil.NewMkdirAllCmd(constants.WorkDir)
 	cl.Add(mkdirCmd, mkdirCheck)
-	
+
 	mkdirCmd = cmdutil.NewMkdirAllCmd(constants.PKIDir)
 	cl.Add(mkdirCmd, mkdirCheck)
 
 	mkdirCmd = cmdutil.NewMkdirAllCmd(filepath.Join(constants.PKIDir, "etcd"))
 	cl.Add(mkdirCmd, mkdirCheck)
 
-	
 	return cl
 }
 
@@ -35,9 +34,10 @@ func GetNodeDirCommands() machine.CommandList {
 	}
 	mkdirCmd := cmdutil.NewMkdirAllCmd(constants.WorkDir)
 	cl.Add(mkdirCmd, mkdirCheck)
-	
+
 	mkdirCmd = cmdutil.NewMkdirAllCmd(constants.PKIDir)
 	cl.Add(mkdirCmd, mkdirCheck)
+	cl.Add(cmdutil.NewMkdirAllCmd("/opt/bin/cni"), checkutil.MkdirCheck)
 
 	return cl
 }

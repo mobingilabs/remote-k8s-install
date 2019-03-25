@@ -54,5 +54,5 @@ const (
 	KubeconfPrefix = "kubeconf"
 
 	// fileName
-	BootstrapKubeletConfName = "bootstarp-kubelet.conf"
+	BootstrapKubeletConfName = "bootstrap-kubelet.conf"
 )
