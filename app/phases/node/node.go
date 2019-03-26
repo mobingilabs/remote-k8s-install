@@ -33,7 +33,7 @@ func Start(cfg *config.Config) error {
 	}
 	log.Info("node create dirs")
 
-	machine.AddCommandList(docker.CommadList(cfg))
+	machine.AddCommandList(docker.CommandList(cfg))
 	if err := machine.Run(); err != nil {
 		log.Error(err)
 		return err
