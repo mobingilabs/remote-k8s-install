@@ -2,6 +2,7 @@ package node
 
 import (
 	"errors"
+	"mobingi/ocean/pkg/kubernetes/service/docker"
 	"path/filepath"
 
 	"mobingi/ocean/pkg/config"
@@ -32,6 +33,13 @@ func Start(cfg *config.Config) error {
 	}
 	log.Info("node create dirs")
 
+	machine.AddCommandList(docker.CommadList(cfg))
+	if err := machine.Run(); err != nil {
+		log.Error(err)
+		return err
+	}
+	log.Info("docker installed")
+
 	// TODO will be move to other, and use constants not join string to path
 
 	machine.AddCommandList(getDownloadCommands(cfg))
@@ -40,7 +48,6 @@ func Start(cfg *config.Config) error {
 		return err
 	}
 	log.Info("download bin")
-
 
 	machine.AddCommandList(dependence.GetNodesSetCommands(cfg))
 	if err := machine.Run(); err != nil {
