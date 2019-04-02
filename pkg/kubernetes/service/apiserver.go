@@ -1,12 +1,17 @@
-package kubeapiserver
+package service
 
 import (
 	"fmt"
+	"mobingi/ocean/pkg/tools/machine"
+	"path/filepath"
+
 	"mobingi/ocean/pkg/config"
+	"mobingi/ocean/pkg/constants"
+	cmdutil "mobingi/ocean/pkg/util/cmd"
+	templateutil "mobingi/ocean/pkg/util/template"
 )
 
-// TODO more info from config and constants to centralized
-const serviceTemplate = `[Unit]
+const apiserverServiceTemplate = `[Unit]
 Description=Kubernetes API Server
 Documentation=https://github.com/GoogleCloudPlatform/kubernetes
 After=network.target
@@ -42,16 +47,39 @@ RestartSec=5
 WantedBy=multi-user.target`
 
 // TODO more data from config to flexible
-type templateData struct {
+type apiserverTemplateData struct {
 	PrivateIP   string
 	EtcdServers string
 }
 
-func newTemplateData(cfg *config.Config) *templateData {
+func newAPIServerTemplateData(cfg *config.Config) *apiserverTemplateData {
 	//TODO util func can join more url together
 	etcdServers := fmt.Sprintf("http://%s:2379", cfg.Masters[0].PrivateIP)
-	return &templateData{
+	return &apiserverTemplateData{
 		EtcdServers: etcdServers,
 		PrivateIP:   cfg.Masters[0].PrivateIP,
 	}
+}
+
+func NewRunAPIServerJob(cfg *config.Config) (*machine.Job, error) {
+	serviceData, err := getAPIServerServiceFile(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	job := machine.NewJob("kube-apiserver-service")
+
+	job.AddCmd(cmdutil.NewWriteCmd(filepath.Join(constants.ServiceDir, constants.KubeApiserverService), string(serviceData)))
+	job.AddCmd(cmdutil.NewSystemStartCmd(constants.KubeApiserverService))
+
+	return job, nil
+}
+
+func getAPIServerServiceFile(cfg *config.Config) ([]byte, error) {
+	data, err := templateutil.Parse(apiserverServiceTemplate, newAPIServerTemplateData(cfg))
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }

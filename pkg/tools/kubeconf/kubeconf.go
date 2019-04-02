@@ -1,4 +1,4 @@
-package kubeconfig
+package kubeconf
 
 import (
 	"crypto/rsa"

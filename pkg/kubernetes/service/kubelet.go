@@ -1,6 +1,15 @@
-package kubelet
+package service
 
-const serviceTemplate = `[Unit]
+import (
+	"path/filepath"
+
+	"mobingi/ocean/pkg/config"
+	"mobingi/ocean/pkg/constants"
+	cmdutil "mobingi/ocean/pkg/util/cmd"
+	"mobingi/ocean/pkg/tools/machine"
+)
+
+const kubeletServiceTemplate = `[Unit]
 Description= The Kubernetes Node Agent
 Documentation=https://github.com/kubernetes.io/docs
 After=network.target
@@ -13,9 +22,9 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target`
 
-const servicedDir = "kubelet.service.d"
-const servicedName = "10-ocean.conf"
-const servicedFileContent = `
+const kubeletServicedDir = "kubelet.service.d"
+const kubeletServicedName = "10-ocean.conf"
+const kubeletServicedFileContent = `
 [Service]
 Environment="KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf"
 Environment="KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml"
@@ -27,9 +36,9 @@ ExecStart=/usr/local/bin/kubelet \$KUBELET_KUBECONFIG_ARGS \$KUBELET_CONFIG_ARGS
 
 // var/lib/kubelet/config.yaml
 // TOOD read from config
-const configDir = "/var/lib/kubelet"
-const configName = "config.yaml"
-const configYAML = `
+const kubeletConfigDir = "/var/lib/kubelet"
+const kubeletConfigName = "config.yaml"
+const kubeletConfigYAML = `
 address: 0.0.0.0
 apiVersion: kubelet.config.k8s.io/v1beta1
 authentication:
@@ -103,5 +112,19 @@ streamingConnectionIdleTimeout: 4h0m0s
 syncFrequency: 1m0s
 volumeStatsAggPeriod: 1m0s`
 
-const flagsFileName = "ocean-flags.env"
-const flagsContent = `KUBELET_KUBEADM_ARGS=--cgroup-driver=systemd --network-plugin=cni --pod-infra-container-image=k8s.gcr.io/pause:3.1`
+const kubeletFlagsFileName = "ocean-flags.env"
+const kubeletFlagsContent = `KUBELET_KUBEADM_ARGS=--cgroup-driver=systemd --network-plugin=cni --pod-infra-container-image=k8s.gcr.io/pause:3.1`
+
+func NewRunKubeletJob(cfg *config.Config) *machine.Job {
+	job := machine.NewJob("kubelet-service")
+
+	job.AddCmd(cmdutil.NewMkdirAllCmd(filepath.Join(constants.ServiceDir, kubeletServicedDir)))
+	job.AddCmd(cmdutil.NewMkdirAllCmd(kubeletConfigDir))
+	job.AddCmd(cmdutil.NewWriteCmd(filepath.Join(constants.ServiceDir, constants.KubeletService), kubeletServiceTemplate))
+	job.AddCmd(cmdutil.NewWriteCmd(filepath.Join(constants.ServiceDir, kubeletServicedDir, kubeletServicedName), kubeletServicedFileContent))
+	job.AddCmd(cmdutil.NewWriteCmd(filepath.Join(kubeletConfigDir, kubeletConfigName), kubeletConfigYAML))
+	job.AddCmd(cmdutil.NewWriteCmd(filepath.Join(kubeletConfigDir, kubeletFlagsFileName), kubeletFlagsContent))
+	job.AddCmd(cmdutil.NewSystemStartCmd(constants.KubeletService))
+
+	return job
+}

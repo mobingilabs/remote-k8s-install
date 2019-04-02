@@ -1,37 +1,71 @@
 package master
 
 import (
+	"mobingi/ocean/pkg/kubernetes/prepare/master"
+	"sync"
+	"mobingi/ocean/pkg/tools/kubeconf"
+	"mobingi/ocean/pkg/tools/certs"
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
-	"mobingi/ocean/pkg/kubernetes/service/etcd"
-	"mobingi/ocean/pkg/kubernetes/service/kubeapiserver"
-	"mobingi/ocean/pkg/kubernetes/service/kubecontrollermanager"
-	"mobingi/ocean/pkg/kubernetes/service/kubescheduler"
-	"mobingi/ocean/pkg/tools/cache"
 	"time"
 
-	clientset "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
-
-	"mobingi/ocean/pkg/certs"
 	"mobingi/ocean/pkg/config"
 	"mobingi/ocean/pkg/constants"
 	"mobingi/ocean/pkg/dependence"
-	"mobingi/ocean/pkg/kubeconfig"
-	"mobingi/ocean/pkg/kubernetes/bootstrap"
-	"mobingi/ocean/pkg/log"
+	"mobingi/ocean/pkg/tools/cache"
 	"mobingi/ocean/pkg/tools/machine"
 	pkiutil "mobingi/ocean/pkg/util/pki"
 )
 
-func Start(cfg *config.Config) error {
+func InstallMasters(cfg *config.Config) error {
+	certList, err := certs.CreatePKIAssets(cfg)
+	if err != nil {
+		log.Panicf("cert create:%s", err.Error())
+	}
+	log.Info("cert create")
+
+	caCert, caKey, err := getCaCertAndKey(certList)
+	if err != nil {
+		log.Panicf("get ca cert and key :%s", err.Error())
+	}
+	kubeconfs, err := kubeconf.CreateKubeconf(cfg, caCert, caKey)
+	if err != nil {
+		log.Panicf("create kube conf :%s", err.Error())
+	}
+	log.Info("kubeconf create")
+
+	machines := make([]machine.Machine, 0,len(cfg.Masters))
+	for _, v := range cfg.Masters {
+		machine, err := machine.NewMachine(v.PublicIP, v.User, v.Password)
+		if err != nil {
+			log.Panicf("new machine :%s", err.Error())
+		}
+	}
+
+	errChans := make([]chan error, 0,len(cfg.Masters))
+	for _, v := range machines {
+		errChans = append(errChans,  v.Run(master.NewJob(cfg.DownloadBinSite, certList, kubeconfs)))
+	}
+	for _, v := range errChans {
+	case err <- v :
+		if err != nil {
+			log.Panicf("master prepare:%s", err.Error())
+		}
+	}
+	log.Info("master prepare")
+
+
+
+
+
+
 	machine, err := machine.NewMachine(cfg.Masters[0].PublicIP, cfg.Masters[0].User, cfg.Masters[0].Password)
 	if err != nil {
 		log.Error(err)
 		return err
 	}
-	defer machine.DisConnect()
+	defer machine.Close()
 	log.Info("machine init")
 
 	machine.AddCommandList(dependence.GetMasterDirCommands())
@@ -137,12 +171,6 @@ func Start(cfg *config.Config) error {
 	log.Info("write kubeconfs to disk")
 
 	time.Sleep(30 * time.Second)
-	k8sClient, err := newK8sClientFromConf(kubeconfs["admin.conf"])
-	if err != nil {
-		log.Errorf("crete k8s clinet err:%s", err.Error())
-		return err
-	}
-	log.Info("new k8s client sucessed")
 
 	bootstrapConf, err := bootstrap.Bootstrap(k8sClient, cfg, certList["ca.crt"])
 	if err != nil {
@@ -156,25 +184,7 @@ func Start(cfg *config.Config) error {
 	return nil
 }
 
-func newK8sClientFromConf(conf []byte) (clientset.Interface, error) {
-	config, err := clientcmd.Load(conf)
-	if err != nil {
-		return nil, err
-	}
-
-	clientConfig, err := clientcmd.NewDefaultClientConfig(*config, &clientcmd.ConfigOverrides{}).ClientConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := clientset.NewForConfig(clientConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	return client, nil
-}
-
+// it will be remove
 func getCaCertAndKey(certList map[string][]byte) (*x509.Certificate, *rsa.PrivateKey, error) {
 	certData, exists := certList[pkiutil.NameForCert(constants.CACertAndKeyBaseName)]
 	if !exists {

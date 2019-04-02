@@ -11,35 +11,47 @@ import (
 
 type CheckFunc func(output string) bool
 
-// TODO we will use job to combine some commands together
+type Command struct {
+	Cmd       string
+	Check     CheckFunc
+	NeedCheck bool // when false,we don't call CheckFunc
+}
+
 type Job struct {
 	Name     string
 	Commands []Command
 }
 
-type CommandList []Command
-
-func (cl *CommandList) Add(cmd string, check CheckFunc) {
-	command := Command{cmd, check}
-	*cl = append([]Command(*cl), command)
+func NewJob(name string) *Job {
+	return &Job{
+		Name:     name,
+		Commands: []Command{},
+	}
 }
 
-func (cl *CommandList) AddAnother(another CommandList) {
-	*cl = append([]Command(*cl), []Command(another)...)
+func (j *Job) AddCmdWithCheck(cmd string, check CheckFunc) {
+	c := Command{
+		Cmd:       cmd,
+		Check:     check,
+		NeedCheck: true,
+	}
+
+	j.Commands = append(j.Commands, c)
 }
 
-type Command struct {
-	Cmd   string
-	Check CheckFunc
+func (j *Job) AddCmd(cmd string) {
+	c := Command{
+		Cmd:       cmd,
+		NeedCheck: false,
+	}
+
+	j.Commands = append(j.Commands, c)
 }
 
 type Machine interface {
-	AddCommand(command Command) error
-	AddCommandList(commandList CommandList) error
-	Run() error
-	Reset() error
-	DisConnect() error
-	SCP(localPath, remotePath string) error
+	// may be we should use context to manage run,so we can stop it, it is return immeditly, so we don't need run a goroutine
+	Run(*Job) <-chan error
+	Close() error
 }
 
 type machine struct {
@@ -58,53 +70,24 @@ func NewMachine(addr, user, password string) (Machine, error) {
 	}
 
 	return &machine{
-		c:        c,
-		commands: make([]Command, 0),
+		c: c,
 	}, nil
 }
 
-func (m *machine) AddCommand(command Command) error {
+func (m *machine) Run(j *Job) <-chan error {
+	c := make(chan error)
 	if err := m.checkRunState(); err != nil {
-		return err
+		c <- err
+		return c
 	}
-
-	m.Lock()
-	m.commands = append(m.commands, command)
-	m.Unlock()
-
-	return nil
-}
-
-func (m *machine) AddCommandList(commandList CommandList) error {
-	if err := m.checkRunState(); err != nil {
-		return err
-	}
-
-	for _, command := range []Command(commandList) {
-		m.commands = append(m.commands, command)
-	}
-
-	return nil
-}
-
-func (m *machine) Run() error {
-	if err := m.checkRunState(); err != nil {
-		return err
-	}
-	defer m.Reset()
-
 	atomic.StoreInt32(&m.run, 1)
-	defer atomic.StoreInt32(&m.run, 0)
-	for _, command := range m.commands {
-		if err := m.docmdAndCheck(command); err != nil {
-			return err
-		}
-	}
+
+	go m.doJob(j, c)
 
 	return nil
 }
 
-func (m *machine) DisConnect() error {
+func (m *machine) Close() error {
 	if err := m.checkRunState(); err != nil {
 		return err
 	}
@@ -112,26 +95,21 @@ func (m *machine) DisConnect() error {
 	return m.c.Close()
 }
 
-func (m *machine) docmdAndCheck(command Command) error {
-	output, err := m.c.Do(command.Cmd)
-	if err != nil {
-		return fmt.Errorf("cmd:%s,err:%s", command.Cmd, err.Error())
+func (m *machine) doJob(j *Job, c chan<- error) {
+	defer atomic.StoreInt32(&m.run, 0)
+	for _, v := range j.Commands {
+		output, err := m.c.Do(v.Cmd)
+		if err != nil {
+			c <- fmt.Errorf("cmd:%s,err:%s", v.Cmd, err.Error())
+			return
+		}
+		if v.NeedCheck {
+			if !v.Check(output) {
+				c <- fmt.Errorf("check failed, output is:%s", output)
+				return
+			}
+		}
 	}
-
-	if !command.Check(output) {
-		return fmt.Errorf("check failed, output is :%s", output)
-	}
-
-	return nil
-}
-
-func (m *machine) Reset() error {
-	if err := m.checkRunState(); err != nil {
-		return err
-	}
-
-	m.commands = m.commands[0:0]
-	return nil
 }
 
 func (m *machine) checkRunState() error {
@@ -140,12 +118,4 @@ func (m *machine) checkRunState() error {
 	}
 
 	return nil
-}
-
-func (m *machine) SCP(localPath, remotePath string) error {
-	if err := m.checkRunState(); err != nil {
-		return err
-	}
-
-	return m.c.SCP(localPath, remotePath)
 }
