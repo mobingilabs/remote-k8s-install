@@ -16,7 +16,6 @@ func NewRunDockerJob(cfg *config.Config) *machine.Job {
 	job.AddCmd(cmdutil.NewMkdirAllCmd("/etc/docker"))
 
 	writeContent := `{
-{
 	"exec-opts": ["native.cgroupdriver=systemd"],
 	"log-driver": "json-file",
 	"log-opts": {

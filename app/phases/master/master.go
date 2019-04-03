@@ -1,6 +1,7 @@
 package master
 
 import (
+	"mobingi/ocean/pkg/util/group"
 	"mobingi/ocean/pkg/kubernetes/prepare/master"
 	"sync"
 	"mobingi/ocean/pkg/tools/kubeconf"
@@ -18,6 +19,7 @@ import (
 	pkiutil "mobingi/ocean/pkg/util/pki"
 )
 
+// This will be a http handler
 func InstallMasters(cfg *config.Config) error {
 	certList, err := certs.CreatePKIAssets(cfg)
 	if err != nil {
@@ -42,32 +44,26 @@ func InstallMasters(cfg *config.Config) error {
 			log.Panicf("new machine :%s", err.Error())
 		}
 	}
+	log.Info("machine init")
 
-	errChans := make([]chan error, 0,len(cfg.Masters))
+	g := group.NewGroup(len(cfg.Masters))
+	job := master.NewJob(cfg.DownloadBinSite, certList, kubeconfs)
 	for _, v := range machines {
-		errChans = append(errChans,  v.Run(master.NewJob(cfg.DownloadBinSite, certList, kubeconfs)))
+		g.Add(func()error{
+			return v.Run(job)
+		})
 	}
-	for _, v := range errChans {
-	case err <- v :
-		if err != nil {
-			log.Panicf("master prepare:%s", err.Error())
+	errs := g.Run()
+	for _, v := range errs {
+		if v != nil {
+			log.Panicf("master prepare:%s", v.Error())
 		}
 	}
 	log.Info("master prepare")
 
 
-
-
-
-
-	machine, err := machine.NewMachine(cfg.Masters[0].PublicIP, cfg.Masters[0].User, cfg.Masters[0].Password)
-	if err != nil {
-		log.Error(err)
-		return err
+	for _, v := range cfg.Masters {
 	}
-	defer machine.Close()
-	log.Info("machine init")
-
 	machine.AddCommandList(dependence.GetMasterDirCommands())
 	if err := machine.Run(); err != nil {
 		log.Error(err)

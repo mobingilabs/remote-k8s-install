@@ -50,7 +50,7 @@ func (j *Job) AddCmd(cmd string) {
 
 type Machine interface {
 	// may be we should use context to manage run,so we can stop it, it is return immeditly, so we don't need run a goroutine
-	Run(*Job) <-chan error
+	Run(*Job) error
 	Close() error
 }
 
@@ -74,17 +74,13 @@ func NewMachine(addr, user, password string) (Machine, error) {
 	}, nil
 }
 
-func (m *machine) Run(j *Job) <-chan error {
-	c := make(chan error)
+func (m *machine) Run(j *Job) error {
 	if err := m.checkRunState(); err != nil {
-		c <- err
-		return c
+		return err
 	}
 	atomic.StoreInt32(&m.run, 1)
 
-	go m.doJob(j, c)
-
-	return nil
+	return m.doJob(j)
 }
 
 func (m *machine) Close() error {
@@ -95,21 +91,21 @@ func (m *machine) Close() error {
 	return m.c.Close()
 }
 
-func (m *machine) doJob(j *Job, c chan<- error) {
+func (m *machine) doJob(j *Job) error {
 	defer atomic.StoreInt32(&m.run, 0)
 	for _, v := range j.Commands {
 		output, err := m.c.Do(v.Cmd)
 		if err != nil {
-			c <- fmt.Errorf("cmd:%s,err:%s", v.Cmd, err.Error())
-			return
+			return err
 		}
 		if v.NeedCheck {
 			if !v.Check(output) {
-				c <- fmt.Errorf("check failed, output is:%s", output)
-				return
+				return fmt.Errorf("check failed, output is:%s", output)
 			}
 		}
 	}
+
+	return nil
 }
 
 func (m *machine) checkRunState() error {
