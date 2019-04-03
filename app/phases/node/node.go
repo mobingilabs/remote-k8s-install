@@ -1,14 +1,12 @@
 package node
 
 import (
+	"mobingi/ocean/pkg/kubernetes/prepare/node"
 	"errors"
-	"mobingi/ocean/pkg/kubernetes/service/docker"
 	"path/filepath"
 
 	"mobingi/ocean/pkg/config"
 	"mobingi/ocean/pkg/constants"
-	"mobingi/ocean/pkg/dependence"
-	"mobingi/ocean/pkg/kubernetes/service/kubelet"
 	"mobingi/ocean/pkg/log"
 	"mobingi/ocean/pkg/tools/cache"
 	"mobingi/ocean/pkg/tools/machine"
@@ -23,15 +21,11 @@ func Start(cfg *config.Config) error {
 		log.Error(err)
 		return err
 	}
-	defer machine.DisConnect()
+	defer machine.Close()
 	log.Info("machine init")
 
-	machine.AddCommandList(dependence.GetNodeDirCommands())
-	if err := machine.Run(); err != nil {
-		log.Error(err)
-		return err
-	}
-	log.Info("node create dirs")
+	// TODO load bootstrapconf from other
+	machine.Run(node.NewJob(cfg.DownloadBinSite, []byte{}))
 
 	machine.AddCommandList(docker.CommandList(cfg))
 	if err := machine.Run(); err != nil {

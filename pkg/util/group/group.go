@@ -20,6 +20,7 @@ func (g *Group) Add(fn func() error) {
 }
 
 func (g *Group) Run() []error {
+	defer g.Reset()
 	errs := make([]error, 0, len(g.works))
 	for _, v := range g.works {
 		g.wg.Add(1)

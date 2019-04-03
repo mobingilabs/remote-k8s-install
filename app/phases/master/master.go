@@ -1,13 +1,8 @@
 package master
 
 import (
-	"mobingi/ocean/pkg/kubernetes/service"
-	"mobingi/ocean/pkg/util/group"
-	"mobingi/ocean/pkg/kubernetes/prepare/master"
-	"sync"
-	"mobingi/ocean/pkg/tools/kubeconf"
-	"mobingi/ocean/pkg/tools/certs"
-	"crypto/rsa"
+"sync"
+"crypto/rsa"
 	"crypto/x509"
 	"fmt"
 	"time"
@@ -18,6 +13,12 @@ import (
 	"mobingi/ocean/pkg/tools/cache"
 	"mobingi/ocean/pkg/tools/machine"
 	pkiutil "mobingi/ocean/pkg/util/pki"
+	"mobingi/ocean/pkg/kubernetes/service"
+	"mobingi/ocean/pkg/util/group"
+	"mobingi/ocean/pkg/kubernetes/prepare/master"
+		"mobingi/ocean/pkg/tools/kubeconf"
+	"mobingi/ocean/pkg/tools/certs"
+	
 )
 
 // This will be a http handler
@@ -98,11 +99,7 @@ func InstallMasters(cfg *config.Config) error {
 	}
 	log.Info("control plane")
 
-
-
-
-
-	bootstrapConf, err := bootstrap.Bootstrap(k8sClient, cfg, certList["ca.crt"])
+	bootstrapConf, err := bootstrap.Bootstrap(kubeconfs["admin.conf"], cfg, certList["ca.crt"])
 	if err != nil {
 		log.Errorf("bootstrap err:%s", err.Error())
 		return err
