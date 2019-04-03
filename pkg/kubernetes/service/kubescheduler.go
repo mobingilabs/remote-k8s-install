@@ -4,7 +4,6 @@ import (
 	"mobingi/ocean/pkg/tools/machine"
 	"path/filepath"
 
-	"mobingi/ocean/pkg/config"
 	"mobingi/ocean/pkg/constants"
 	cmdutil "mobingi/ocean/pkg/util/cmd"
 )
@@ -28,7 +27,7 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target`
 
-func NewRunSchedulerJob(cfg *config.Config) (*machine.Job, error) {
+func NewRunSchedulerJob() (*machine.Job, error) {
 	job := machine.NewJob("scheduler-service")
 
 	job.AddCmd(cmdutil.NewWriteCmd(filepath.Join(constants.ServiceDir, constants.KubeSchedulerService), schedulerServiceTemplate))

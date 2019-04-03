@@ -1,6 +1,7 @@
 package master
 
 import (
+	"mobingi/ocean/pkg/kubernetes/service"
 	"mobingi/ocean/pkg/util/group"
 	"mobingi/ocean/pkg/kubernetes/prepare/master"
 	"sync"
@@ -61,112 +62,45 @@ func InstallMasters(cfg *config.Config) error {
 	}
 	log.Info("master prepare")
 
-
+	privateIPs := make([]string, 0, len(cfg.Masters))
 	for _, v := range cfg.Masters {
+		privateIPs = appned(privateIPs, v.PrivateIP)
 	}
-	machine.AddCommandList(dependence.GetMasterDirCommands())
-	if err := machine.Run(); err != nil {
-		log.Error(err)
-		return err
-	}
-	log.Info("master create dirs")
 
-	machine.AddCommandList(getDownloadCommands(cfg))
-	if err := machine.Run(); err != nil {
-		log.Error(err)
-		return err
-	}
-	log.Info("master download sucess")
-
-	machine.AddCommandList(dependence.GetMasterSetCommands())
-	if err := machine.Run(); err != nil {
-		log.Error(err)
-		return err
-	}
-	log.Info("master set sucess")
-
-	certList, err := certs.CreatePKIAssets(cfg)
+	etcdRunJobs, err := service.NewRunEtcdJobs(privateIPs)
 	if err != nil {
-		log.Errorf("create pki asstes err:%s", err)
-		return err
+		panic(err)
 	}
-	log.Info("create pki assestes")
-	machine.AddCommandList(getWriteCertsCommand(certList))
-	if err := machine.Run(); err != nil {
-		log.Error(err)
-		return err
+	for i, v := range machines {
+		g.Add(func() error {
+			return v.Run(etcdRunJobs[i])
+		})
 	}
-	log.Info("write certs to disk")
-
-	cache.Put(constants.CertPrefix, "ca.crt", certList["ca.crt"])
-
-	etcdCommandList, err := etcd.CommandList(cfg)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	machine.AddCommandList(etcdCommandList)
-	if err := machine.Run(); err != nil {
-		log.Error(err)
-		return err
+	errs := g.Run()
+	for _, v := range errs {
+		if v != nil {
+			log.Panicf("etcd run:%s", v.Error())
+		}
 	}
 	log.Info("etcd run")
 
-	kubeapiserverCommandList, err := kubeapiserver.CommandList(cfg)
-	if err != nil {
-		log.Error(err)
-		return err
+	controlPlaneJobs := service.NewRunAPIServerJobs(privateIPs, service.GetEtcdServers(privateIPs))
+	for i, v := range machines {
+		g.Add(func() error {
+			return v.Run(controlPlaneJobs[i])
+		})
 	}
-	machine.AddCommandList(kubeapiserverCommandList)
-	if err := machine.Run(); err != nil {
-		log.Error(err)
-		return err
+	errs := g.Run()
+	for _, v := range errs {
+		if v != nil {
+			log.Panicf("control plane:%s", v.Error())
+		}
 	}
-	log.Info("kube-apiserver run")
+	log.Info("control plane")
 
-	kubecontrollermanagerCommandList, err := kubecontrollermanager.CommandList(cfg)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	machine.AddCommandList(kubecontrollermanagerCommandList)
-	if err := machine.Run(); err != nil {
-		log.Error(err)
-		return err
-	}
-	log.Info("kube-controller-manager run")
 
-	kubeschedulerCommandList, err := kubescheduler.CommandList(cfg)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	machine.AddCommandList(kubeschedulerCommandList)
-	if err := machine.Run(); err != nil {
-		log.Error(err)
-		return err
-	}
-	log.Info("kube-scheduler run")
 
-	caCert, caKey, err := getCaCertAndKey(certList)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	kubeconfs, err := kubeconfig.CreateKubeconf(cfg, caCert, caKey)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	log.Info("create kubeconfs")
-	machine.AddCommandList(getWriteKubeconfsCommand(kubeconfs))
-	if err := machine.Run(); err != nil {
-		log.Error(err)
-		return err
-	}
-	log.Info("write kubeconfs to disk")
 
-	time.Sleep(30 * time.Second)
 
 	bootstrapConf, err := bootstrap.Bootstrap(k8sClient, cfg, certList["ca.crt"])
 	if err != nil {

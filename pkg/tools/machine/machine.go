@@ -48,6 +48,10 @@ func (j *Job) AddCmd(cmd string) {
 	j.Commands = append(j.Commands, c)
 }
 
+func (j *Job) AddAnother(another *Job) {
+	j.Commands = append(j.Commands, another.Commands...)
+}
+
 type Machine interface {
 	// may be we should use context to manage run,so we can stop it, it is return immeditly, so we don't need run a goroutine
 	Run(*Job) error

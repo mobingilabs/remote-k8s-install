@@ -3,10 +3,9 @@ package service
 import (
 	"path/filepath"
 
-	"mobingi/ocean/pkg/config"
 	"mobingi/ocean/pkg/constants"
-	cmdutil "mobingi/ocean/pkg/util/cmd"
 	"mobingi/ocean/pkg/tools/machine"
+	cmdutil "mobingi/ocean/pkg/util/cmd"
 )
 
 const kubeletServiceTemplate = `[Unit]
@@ -115,7 +114,7 @@ volumeStatsAggPeriod: 1m0s`
 const kubeletFlagsFileName = "ocean-flags.env"
 const kubeletFlagsContent = `KUBELET_KUBEADM_ARGS=--cgroup-driver=systemd --network-plugin=cni --pod-infra-container-image=k8s.gcr.io/pause:3.1`
 
-func NewRunKubeletJob(cfg *config.Config) *machine.Job {
+func NewRunKubeletJob() *machine.Job {
 	job := machine.NewJob("kubelet-service")
 
 	job.AddCmd(cmdutil.NewMkdirAllCmd(filepath.Join(constants.ServiceDir, kubeletServicedDir)))

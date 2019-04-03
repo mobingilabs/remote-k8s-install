@@ -3,7 +3,6 @@ package service
 import (
 	"path/filepath"
 
-	"mobingi/ocean/pkg/config"
 	"mobingi/ocean/pkg/constants"
 	"mobingi/ocean/pkg/tools/machine"
 	cmdutil "mobingi/ocean/pkg/util/cmd"
@@ -36,7 +35,7 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target`
 
-func NewRunControllerManagerJob(cfg *config.Config) (*machine.Job, error) {
+func NewRunControllerManagerJob() (*machine.Job, error) {
 	job := machine.NewJob("controller-manager-service")
 
 	job.AddCmd(cmdutil.NewWriteCmd(filepath.Join(constants.ServiceDir, constants.KubeControllerManagerService), controllerManagerServiceTemplate))

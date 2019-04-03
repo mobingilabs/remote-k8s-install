@@ -1,12 +1,10 @@
 package service
 
 import (
-	"fmt"
-	"mobingi/ocean/pkg/tools/machine"
 	"path/filepath"
 
-	"mobingi/ocean/pkg/config"
 	"mobingi/ocean/pkg/constants"
+	"mobingi/ocean/pkg/tools/machine"
 	cmdutil "mobingi/ocean/pkg/util/cmd"
 	templateutil "mobingi/ocean/pkg/util/template"
 )
@@ -20,7 +18,7 @@ After=etcd.service
 [Service]
 ExecStart=/usr/local/bin/kube-apiserver \\
   --authorization-mode=Node,RBAC \\
-  --advertise-address={{.PrivateIP}} \\
+  --advertise-address={{.IP}} \\
   --bind-address=0.0.0.0 \\
   --client-ca-file=/etc/kubernetes/pki/ca.crt \\
   --enable-admission-plugins=NodeRestriction \\
@@ -48,35 +46,33 @@ WantedBy=multi-user.target`
 
 // TODO more data from config to flexible
 type apiserverTemplateData struct {
-	PrivateIP   string
+	// now it is a private ip
+	IP          string
 	EtcdServers string
 }
 
-func newAPIServerTemplateData(cfg *config.Config) *apiserverTemplateData {
-	//TODO util func can join more url together
-	etcdServers := fmt.Sprintf("http://%s:2379", cfg.Masters[0].PrivateIP)
-	return &apiserverTemplateData{
+func NewRunAPIServerJobs(ips []string, etcdServers string) ([]*machine.Job, error) {
+	jobs := make([]*machine.Job, 0, len(ips))
+	for _, v := range ips {
+		serviceData, err := getAPIServerServiceFile(v, etcdServers)
+		if err != nil {
+			return nil, err
+		}
+
+		job := machine.NewJob("kube-apiserver-service")
+		job.AddCmd(cmdutil.NewWriteCmd(filepath.Join(constants.ServiceDir, constants.KubeApiserverService), string(serviceData)))
+		job.AddCmd(cmdutil.NewSystemStartCmd(constants.KubeApiserverService))
+	}
+
+	return jobs, nil
+}
+
+func getAPIServerServiceFile(ip, etcdServers string) ([]byte, error) {
+	templateData := apiserverTemplateData{
+		IP:          ip,
 		EtcdServers: etcdServers,
-		PrivateIP:   cfg.Masters[0].PrivateIP,
 	}
-}
-
-func NewRunAPIServerJob(cfg *config.Config) (*machine.Job, error) {
-	serviceData, err := getAPIServerServiceFile(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	job := machine.NewJob("kube-apiserver-service")
-
-	job.AddCmd(cmdutil.NewWriteCmd(filepath.Join(constants.ServiceDir, constants.KubeApiserverService), string(serviceData)))
-	job.AddCmd(cmdutil.NewSystemStartCmd(constants.KubeApiserverService))
-
-	return job, nil
-}
-
-func getAPIServerServiceFile(cfg *config.Config) ([]byte, error) {
-	data, err := templateutil.Parse(apiserverServiceTemplate, newAPIServerTemplateData(cfg))
+	data, err := templateutil.Parse(apiserverServiceTemplate, templateData)
 	if err != nil {
 		return nil, err
 	}
