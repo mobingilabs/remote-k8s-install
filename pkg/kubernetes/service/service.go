@@ -4,7 +4,7 @@ import (
 	"mobingi/ocean/pkg/tools/machine"
 )
 
-func NewRunControlJobs(ips []string, etcdServers string) ([]*machine.Job, error) {
+func NewRunControlPlaneJobs(ips []string, etcdServers string) ([]*machine.Job, error) {
 	apiserverJobs, err := NewRunAPIServerJobs(ips, etcdServers)
 	if err != nil {
 		return nil, err

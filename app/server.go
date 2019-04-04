@@ -4,6 +4,11 @@ import (
 	"mobingi/ocean/app/phases/master"
 	"mobingi/ocean/app/phases/node"
 	"mobingi/ocean/pkg/config"
+	"mobingi/ocean/pkg/constants"
+	"mobingi/ocean/pkg/kubernetes/bootstrap"
+	"mobingi/ocean/pkg/log"
+	"mobingi/ocean/pkg/tools/cache"
+	"mobingi/ocean/pkg/tools/machine"
 )
 
 func Start() error {
@@ -11,11 +16,25 @@ func Start() error {
 	if err != nil {
 		return err
 	}
-	if err := master.Start(cfg); err != nil {
+	if err := master.InstallMasters(cfg); err != nil {
 		return err
 	}
 
-	if err := node.Start(cfg); err != nil {
+	adminConf, _ := cache.GetOne(constants.KubeconfPrefix, "admin.conf")
+	caCert, _ := cache.GetOne(constants.CertPrefix, "ca.crt")
+
+	bootstrapconf, err := bootstrap.Bootstrap(adminConf.([]byte), caCert.([]byte))
+	if err != nil {
+		log.Panic(err)
+	}
+
+	mi := &machine.MachineInfo{
+		PublicIP: cfg.Nodes[0].PublicIP,
+		User:     cfg.Nodes[0].User,
+		Password: cfg.Nodes[0].Password,
+	}
+
+	if err := node.Join(adminConf.([]byte), bootstrapconf, caCert.([]byte), cfg.DownloadBinSite, mi); err != nil {
 		return err
 	}
 

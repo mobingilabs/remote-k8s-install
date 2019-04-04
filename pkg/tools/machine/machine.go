@@ -11,6 +11,12 @@ import (
 
 type CheckFunc func(output string) bool
 
+type MachineInfo struct {
+	PublicIP string
+	User     string
+	Password string
+}
+
 type Command struct {
 	Cmd       string
 	Check     CheckFunc

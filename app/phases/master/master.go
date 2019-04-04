@@ -1,24 +1,21 @@
 package master
 
 import (
-"sync"
-"crypto/rsa"
+	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
-	"time"
 
 	"mobingi/ocean/pkg/config"
 	"mobingi/ocean/pkg/constants"
-	"mobingi/ocean/pkg/dependence"
-	"mobingi/ocean/pkg/tools/cache"
-	"mobingi/ocean/pkg/tools/machine"
-	pkiutil "mobingi/ocean/pkg/util/pki"
+	preparemaster "mobingi/ocean/pkg/kubernetes/prepare/master"
 	"mobingi/ocean/pkg/kubernetes/service"
-	"mobingi/ocean/pkg/util/group"
-	"mobingi/ocean/pkg/kubernetes/prepare/master"
-		"mobingi/ocean/pkg/tools/kubeconf"
+	"mobingi/ocean/pkg/log"
+	"mobingi/ocean/pkg/tools/cache"
 	"mobingi/ocean/pkg/tools/certs"
-	
+	"mobingi/ocean/pkg/tools/kubeconf"
+	"mobingi/ocean/pkg/tools/machine"
+	"mobingi/ocean/pkg/util/group"
+	pkiutil "mobingi/ocean/pkg/util/pki"
 )
 
 // This will be a http handler
@@ -38,20 +35,23 @@ func InstallMasters(cfg *config.Config) error {
 		log.Panicf("create kube conf :%s", err.Error())
 	}
 	log.Info("kubeconf create")
+	// TODO we will put confs to store, not cache
+	cache.Put(constants.KubeconfPrefix, "admin.conf", kubeconfs["admin.conf"])
 
-	machines := make([]machine.Machine, 0,len(cfg.Masters))
+	machines := make([]machine.Machine, 0, len(cfg.Masters))
 	for _, v := range cfg.Masters {
 		machine, err := machine.NewMachine(v.PublicIP, v.User, v.Password)
 		if err != nil {
 			log.Panicf("new machine :%s", err.Error())
 		}
+		machines = append(machines, machine)
 	}
 	log.Info("machine init")
 
 	g := group.NewGroup(len(cfg.Masters))
-	job := master.NewJob(cfg.DownloadBinSite, certList, kubeconfs)
+	job := preparemaster.NewJob(cfg.DownloadBinSite, certList, kubeconfs)
 	for _, v := range machines {
-		g.Add(func()error{
+		g.Add(func() error {
 			return v.Run(job)
 		})
 	}
@@ -65,7 +65,7 @@ func InstallMasters(cfg *config.Config) error {
 
 	privateIPs := make([]string, 0, len(cfg.Masters))
 	for _, v := range cfg.Masters {
-		privateIPs = appned(privateIPs, v.PrivateIP)
+		privateIPs = append(privateIPs, v.PrivateIP)
 	}
 
 	etcdRunJobs, err := service.NewRunEtcdJobs(privateIPs)
@@ -77,7 +77,7 @@ func InstallMasters(cfg *config.Config) error {
 			return v.Run(etcdRunJobs[i])
 		})
 	}
-	errs := g.Run()
+	errs = g.Run()
 	for _, v := range errs {
 		if v != nil {
 			log.Panicf("etcd run:%s", v.Error())
@@ -85,28 +85,22 @@ func InstallMasters(cfg *config.Config) error {
 	}
 	log.Info("etcd run")
 
-	controlPlaneJobs := service.NewRunAPIServerJobs(privateIPs, service.GetEtcdServers(privateIPs))
+	controlPlaneJobs, err := service.NewRunControlPlaneJobs(privateIPs, service.GetEtcdServers(privateIPs))
+	if err != nil {
+		log.Panic(err)
+	}
 	for i, v := range machines {
 		g.Add(func() error {
 			return v.Run(controlPlaneJobs[i])
 		})
 	}
-	errs := g.Run()
+	errs = g.Run()
 	for _, v := range errs {
 		if v != nil {
 			log.Panicf("control plane:%s", v.Error())
 		}
 	}
 	log.Info("control plane")
-
-	bootstrapConf, err := bootstrap.Bootstrap(kubeconfs["admin.conf"], cfg, certList["ca.crt"])
-	if err != nil {
-		log.Errorf("bootstrap err:%s", err.Error())
-		return err
-	}
-	log.Info("bootstrap done")
-
-	cache.Put(constants.KubeconfPrefix, constants.BootstrapKubeletConfName, bootstrapConf)
 
 	return nil
 }

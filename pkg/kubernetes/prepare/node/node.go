@@ -14,6 +14,7 @@ func NewJob(site string, bootstrapconf []byte) *machine.Job {
 	setEnv(j)
 	writeBootstrapconf(j, bootstrapconf)
 	downloadBin(j, site)
+	installDocker(j)
 
 	return j
 }
