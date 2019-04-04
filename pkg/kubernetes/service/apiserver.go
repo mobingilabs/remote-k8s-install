@@ -17,7 +17,8 @@ After=etcd.service
 
 [Service]
 ExecStart=/usr/local/bin/kube-apiserver \\
-  --authorization-mode=Node,RBAC \\
+	--authorization-mode=Node,RBAC \\
+	--allow-privileged=true \\
   --advertise-address={{.IP}} \\
   --bind-address=0.0.0.0 \\
   --client-ca-file=/etc/kubernetes/pki/ca.crt \\
