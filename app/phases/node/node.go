@@ -7,7 +7,7 @@ import (
 	"mobingi/ocean/pkg/tools/machine"
 )
 
-func Join(adminconf []byte, bootstrapconf []byte, caCert []byte, downloadBinSite string, mi *machine.MachineInfo) error {
+func Join(adminconf []byte, bootstrapconf []byte, downloadBinSite string, mi *machine.MachineInfo) error {
 	machine, err := machine.NewMachine(mi.PublicIP, mi.User, mi.Password)
 	if err != nil {
 		log.Error(err)
