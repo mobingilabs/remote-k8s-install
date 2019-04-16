@@ -1,8 +1,8 @@
 package node
 
 import (
-	"mobingi/ocean/pkg/kubernetes/service"
 	"mobingi/ocean/pkg/kubernetes/prepare/node"
+	"mobingi/ocean/pkg/kubernetes/service"
 	"mobingi/ocean/pkg/log"
 	"mobingi/ocean/pkg/tools/machine"
 )
@@ -16,7 +16,6 @@ func Join(adminconf []byte, bootstrapconf []byte, caCert []byte, downloadBinSite
 	defer machine.Close()
 	log.Info("machine init")
 
-	// TODO load bootstrapconf from other
 	err = machine.Run(node.NewJob(downloadBinSite, bootstrapconf))
 	if err != nil {
 		log.Panic(err)
