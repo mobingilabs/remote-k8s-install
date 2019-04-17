@@ -15,6 +15,7 @@ type Config struct {
 	Nodes   []Machine
 }
 
+
 // TODO more ssh auth method support
 type Machine struct {
 	PublicIP  string `yaml:"publicIP"`

@@ -2,7 +2,6 @@ package main
 
 import (
 	"mobingi/ocean/app"
-	_ "net/http/pprof"
 )
 
 func main() {

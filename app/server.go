@@ -20,10 +20,11 @@ func Start() error {
 		return err
 	}
 
-	adminConf, _ := cache.GetOne(constants.KubeconfPrefix, "admin.conf")
-	caCert, _ := cache.GetOne(constants.CertPrefix, "ca.crt")
+	return nil
 
-	bootstrapconf, err := bootstrap.Bootstrap(adminConf.([]byte), caCert.([]byte))
+	adminConf, _ := cache.GetOne(constants.KubeconfPrefix, "admin.conf")
+
+	bootstrapconf, err := bootstrap.Bootstrap(adminConf.([]byte))
 	if err != nil {
 		log.Panic(err)
 	}
@@ -34,7 +35,7 @@ func Start() error {
 		Password: cfg.Nodes[0].Password,
 	}
 
-	if err := node.Join(adminConf.([]byte), bootstrapconf, caCert.([]byte), cfg.DownloadBinSite, mi); err != nil {
+	if err := node.Join(adminConf.([]byte), bootstrapconf, cfg.DownloadBinSite, mi); err != nil {
 		return err
 	}
 

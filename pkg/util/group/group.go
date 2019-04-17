@@ -23,13 +23,16 @@ func (g *Group) Run() []error {
 	defer g.Reset()
 	errs := make([]error, 0, len(g.works))
 	for _, v := range g.works {
+		w := v
 		g.wg.Add(1)
 		go func() {
 			defer g.wg.Done()
-			err := v()
+			err := w()
 			errs = append(errs, err)
 		}()
 	}
+
+	g.wg.Wait()
 
 	return errs
 }

@@ -20,7 +20,11 @@ import (
 
 // This will be a http handler
 func InstallMasters(cfg *config.Config) error {
-	certList, err := certs.CreatePKIAssets(cfg)
+	sans := make([]string, 0, len(cfg.Masters))
+	for _, v := range cfg.Masters {
+		sans = append(sans, v.PrivateIP)
+	}
+	certList, err := certs.CreatePKIAssets(cfg.AdvertiseAddress, sans)
 	if err != nil {
 		log.Panicf("cert create:%s", err.Error())
 	}
@@ -38,21 +42,15 @@ func InstallMasters(cfg *config.Config) error {
 	// TODO we will put confs to store, not cache
 	cache.Put(constants.KubeconfPrefix, "admin.conf", kubeconfs["admin.conf"])
 
-	machines := make([]machine.Machine, 0, len(cfg.Masters))
-	for _, v := range cfg.Masters {
-		machine, err := machine.NewMachine(v.PublicIP, v.User, v.Password)
-		if err != nil {
-			log.Panicf("new machine :%s", err.Error())
-		}
-		machines = append(machines, machine)
-	}
+	machines := NewMachines(cfg)
 	log.Info("machine init")
 
 	g := group.NewGroup(len(cfg.Masters))
 	job := preparemaster.NewJob(cfg.DownloadBinSite, certList, kubeconfs)
 	for _, v := range machines {
+		m := v
 		g.Add(func() error {
-			return v.Run(job)
+			return m.Run(job)
 		})
 	}
 	errs := g.Run()
@@ -68,22 +66,9 @@ func InstallMasters(cfg *config.Config) error {
 		privateIPs = append(privateIPs, v.PrivateIP)
 	}
 
-	etcdRunJobs, err := service.NewRunEtcdJobs(privateIPs)
-	if err != nil {
-		panic(err)
-	}
-	for i, v := range machines {
-		g.Add(func() error {
-			return v.Run(etcdRunJobs[i])
-		})
-	}
-	errs = g.Run()
-	for _, v := range errs {
-		if v != nil {
-			log.Panicf("etcd run:%s", v.Error())
-		}
-	}
-	log.Info("etcd run")
+	runEtcdCluster(machines, privateIPs)
+
+	return nil
 
 	controlPlaneJobs, err := service.NewRunControlPlaneJobs(privateIPs, service.GetEtcdServers(privateIPs))
 	if err != nil {
@@ -126,4 +111,41 @@ func getCaCertAndKey(certList map[string][]byte) (*x509.Certificate, *rsa.Privat
 	}
 
 	return cert, key, nil
+}
+
+func runEtcdCluster(machines []machine.Machine, privateIPs []string) {
+	etcdRunJobs, err := service.NewRunEtcdJobs(privateIPs)
+	if err != nil {
+		panic(err)
+	}
+
+	g := group.NewGroup(len(machines))
+
+	for i, v := range machines {
+		m := v
+		j := i
+		g.Add(func() error {
+			return m.Run(etcdRunJobs[j])
+		})
+	}
+	errs := g.Run()
+	for _, v := range errs {
+		if v != nil {
+			log.Panicf("etcd run:%s", v.Error())
+		}
+	}
+	log.Info("etcd run")
+}
+
+func NewMachines(cfg *config.Config) []machine.Machine {
+	machines := make([]machine.Machine, 0, len(cfg.Masters))
+	for _, v := range cfg.Masters {
+		machine, err := machine.NewMachine(v.PublicIP, v.User, v.Password)
+		if err != nil {
+			log.Panicf("new machine :%s", err.Error())
+		}
+		machines = append(machines, machine)
+	}
+
+	return machines
 }

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 )
 
+// NewJob will craete dir all,set machine env,write pki files to disk, write kubeconf files to disk
 func NewJob(site string, certList map[string][]byte, kubeconfs map[string][]byte) *machine.Job {
 	j := machine.NewJob("master-prepare")
 
@@ -14,7 +15,8 @@ func NewJob(site string, certList map[string][]byte, kubeconfs map[string][]byte
 	setEnv(j)
 	writePKI(j, certList)
 	writeKubeconfs(j, kubeconfs)
-	downloadBIN(j, site)
+	// TODO for test
+	//downloadBIN(j, site)
 
 	return j
 }
@@ -33,7 +35,7 @@ func setEnv(j *machine.Job) {
 
 func writePKI(j *machine.Job, certList map[string][]byte) {
 	for k, v := range certList {
-		j.AddCmd(cmdutil.NewWriteCmd(filepath.Join(constants.WorkDir, k), string(v)))
+		j.AddCmd(cmdutil.NewWriteCmd(filepath.Join(constants.WorkDir, "pki", k), string(v)))
 	}
 }
 

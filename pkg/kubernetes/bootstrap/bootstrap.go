@@ -11,7 +11,7 @@ import (
 // Bootstrap new token and post secret to apiserver
 // create bootstrap-kubelet.conf to cache
 // rolebindings for this token
-func Bootstrap(adminconf []byte, caCrt []byte) ([]byte, error) {
+func Bootstrap(adminconf []byte) ([]byte, error) {
 	client, err := newK8sClientFromConf(adminconf)
 	if err != nil {
 		return nil, err
@@ -28,6 +28,10 @@ func Bootstrap(adminconf []byte, caCrt []byte) ([]byte, error) {
 	}
 
 	serverURL, err := getAPIServerURL(adminconf)
+	if err != nil {
+		return nil, err
+	}
+	caCrt, err := getCACertFromKubeconf(adminconf)
 	if err != nil {
 		return nil, err
 	}
@@ -75,4 +79,13 @@ func getAPIServerURL(adminconf []byte) (string, error) {
 
 	// TODO may be we check the default-cluster is exist
 	return config.Clusters["default-cluster"].Server, nil
+}
+
+func getCACertFromKubeconf(kubeconf []byte) ([]byte, error) {
+	config, err := clientcmd.Load(kubeconf)
+	if err != nil {
+		return nil, err
+	}
+
+	return config.Clusters["default-cluster"].CertificateAuthorityData, nil
 }

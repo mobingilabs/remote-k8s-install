@@ -14,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 	certutil "k8s.io/client-go/util/cert"
 
-	"mobingi/ocean/pkg/config"
 	"mobingi/ocean/pkg/constants"
 )
 
@@ -29,10 +28,20 @@ const (
 	duration365d = time.Hour * 24 * 365
 )
 
-func CreatePKIAssets(cfg *config.Config) (map[string][]byte, error) {
+type config struct {
+	AdvertiseAddress string
+	SANs             []string //now is master machines private ip
+}
+
+// CreatePKIAssets will create all pki file(includ etcd)
+func CreatePKIAssets(advertiseAddress string, SANs []string) (map[string][]byte, error) {
 	certTree, err := getDefaultCertList().asMap().certTree()
 	if err != nil {
 		return nil, err
+	}
+	cfg := &config{
+		AdvertiseAddress: advertiseAddress,
+		SANs:             SANs,
 	}
 	certs, err := certTree.createTree(cfg)
 	if err != nil {

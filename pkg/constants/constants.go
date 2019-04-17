@@ -25,6 +25,16 @@ const (
 	FrontProxyClientCertAndKeyBaseName = "front-proxy-client"
 	FrontProxyClientCertCommonName     = "front-proxy-client"
 
+	EtcdHealthcheckClientCertCommonName = "kube-etcd-healthcheck-client"
+
+	APIServerEtcdClientCertCommonName = "kube-apiserver-etcd-client"
+
+	EtcdCACertAndKeyBaseName     = "etcd/ca"
+	EtcdServerCertAndKeyBaseName = "etcd/server"
+	EtcdPeerCertAndKeyBaseName   = "etcd/peer"
+	EtcdHealthcheckClientCertAndKeyBaseName = "etcd/healthcheck-client"
+	APIServerEtcdClientCertAndKeyBaseName = "apiserver-etcd-client"
+
 	// key
 	ServiceAccountKeyBaseName = "sa"
 

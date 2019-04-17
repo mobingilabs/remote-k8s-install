@@ -4,6 +4,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
+	"mobingi/ocean/pkg/constants"
 
 	"github.com/pkg/errors"
 
@@ -72,7 +73,7 @@ func getKubeconfigSpecs(cfg *config.Config, caCert *x509.Certificate, caKey *rsa
 			ClientName: "kubernetes-admin",
 			ClientCertAuth: &clientCertAuth{
 				CAKey:         caKey,
-				Organizations: []string{kubeadmconstants.MastersGroup},
+				Organizations: []string{constants.MastersGroup},
 			},
 		},
 		kubeadmconstants.ControllerManagerKubeConfigFileName: {
