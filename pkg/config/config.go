@@ -15,6 +15,23 @@ type Config struct {
 	Nodes   []Machine
 }
 
+func (c *Config) GetSANs() []string {
+	sans := make([]string, 0, len(c.Masters))
+	for _, v := range c.Masters {
+		sans = append(sans, v.PrivateIP)
+	}
+
+	return sans
+}
+
+func (c *Config) GetMasterPrivateIPs() []string {
+	privateIPs := make([]string, 0, len(c.Masters))
+	for _, v := range c.Masters {
+		privateIPs = append(privateIPs, v.PrivateIP)
+	}
+
+	return privateIPs
+}
 
 // TODO more ssh auth method support
 type Machine struct {

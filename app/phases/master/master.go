@@ -20,10 +20,7 @@ import (
 
 // This will be a http handler
 func InstallMasters(cfg *config.Config) error {
-	sans := make([]string, 0, len(cfg.Masters))
-	for _, v := range cfg.Masters {
-		sans = append(sans, v.PrivateIP)
-	}
+	sans := cfg.GetSANs()
 	certList, err := certs.CreatePKIAssets(cfg.AdvertiseAddress, sans)
 	if err != nil {
 		log.Panicf("cert create:%s", err.Error())
@@ -42,7 +39,7 @@ func InstallMasters(cfg *config.Config) error {
 	// TODO we will put confs to store, not cache
 	cache.Put(constants.KubeconfPrefix, "admin.conf", kubeconfs["admin.conf"])
 
-	machines := NewMachines(cfg)
+	machines := newMachines(cfg)
 	log.Info("machine init")
 
 	g := group.NewGroup(len(cfg.Masters))
@@ -61,31 +58,11 @@ func InstallMasters(cfg *config.Config) error {
 	}
 	log.Info("master prepare")
 
-	privateIPs := make([]string, 0, len(cfg.Masters))
-	for _, v := range cfg.Masters {
-		privateIPs = append(privateIPs, v.PrivateIP)
-	}
-
+	privateIPs := cfg.GetMasterPrivateIPs()
 	runEtcdCluster(machines, privateIPs)
 
-	return nil
-
-	controlPlaneJobs, err := service.NewRunControlPlaneJobs(privateIPs, service.GetEtcdServers(privateIPs))
-	if err != nil {
-		log.Panic(err)
-	}
-	for i, v := range machines {
-		g.Add(func() error {
-			return v.Run(controlPlaneJobs[i])
-		})
-	}
-	errs = g.Run()
-	for _, v := range errs {
-		if v != nil {
-			log.Panicf("control plane:%s", v.Error())
-		}
-	}
-	log.Info("control plane")
+	etcdServers := service.GetEtcdServers(privateIPs)
+	runControlPlane(machines, privateIPs, etcdServers)
 
 	return nil
 }
@@ -113,31 +90,7 @@ func getCaCertAndKey(certList map[string][]byte) (*x509.Certificate, *rsa.Privat
 	return cert, key, nil
 }
 
-func runEtcdCluster(machines []machine.Machine, privateIPs []string) {
-	etcdRunJobs, err := service.NewRunEtcdJobs(privateIPs)
-	if err != nil {
-		panic(err)
-	}
-
-	g := group.NewGroup(len(machines))
-
-	for i, v := range machines {
-		m := v
-		j := i
-		g.Add(func() error {
-			return m.Run(etcdRunJobs[j])
-		})
-	}
-	errs := g.Run()
-	for _, v := range errs {
-		if v != nil {
-			log.Panicf("etcd run:%s", v.Error())
-		}
-	}
-	log.Info("etcd run")
-}
-
-func NewMachines(cfg *config.Config) []machine.Machine {
+func newMachines(cfg *config.Config) []machine.Machine {
 	machines := make([]machine.Machine, 0, len(cfg.Masters))
 	for _, v := range cfg.Masters {
 		machine, err := machine.NewMachine(v.PublicIP, v.User, v.Password)
@@ -148,4 +101,49 @@ func NewMachines(cfg *config.Config) []machine.Machine {
 	}
 
 	return machines
+}
+
+func runEtcdCluster(machines []machine.Machine, privateIPs []string) {
+	etcdRunJobs, err := service.NewRunEtcdJobs(privateIPs)
+	if err != nil {
+		panic(err)
+	}
+
+	g := group.NewGroup(len(machines))
+	for i, v := range machines {
+		m := v
+		j := i
+		g.Add(func() error {
+			return m.Run(etcdRunJobs[j])
+		})
+	}
+	// TODO we will design a error list type for check easily
+	errs := g.Run()
+	for _, v := range errs {
+		if v != nil {
+			log.Panicf("etcd run:%s", v.Error())
+		}
+	}
+	log.Info("etcd run")
+}
+
+func runControlPlane(machines []machine.Machine, privateIPs []string, etcdServers string) {
+	controlPlaneJobs, err := service.NewRunControlPlaneJobs(privateIPs, etcdServers)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	g := group.NewGroup(len(machines))
+	for i, v := range machines {
+		g.Add(func() error {
+			return v.Run(controlPlaneJobs[i])
+		})
+	}
+	errs := g.Run()
+	for _, v := range errs {
+		if v != nil {
+			log.Panicf("control plane:%s", v.Error())
+		}
+	}
+	log.Info("control plane")
 }
