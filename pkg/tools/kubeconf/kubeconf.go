@@ -64,7 +64,7 @@ func CreateKubeconf(cfg *config.Config, caCert *x509.Certificate, caKey *rsa.Pri
 func getKubeconfigSpecs(cfg *config.Config, caCert *x509.Certificate, caKey *rsa.PrivateKey) (map[string]*kubeconfigSpec, error) {
 	// TODO get port from config
 	publicEndpoint := fmt.Sprintf("https://%s:6443", cfg.AdvertiseAddress)
-	privateEndpoint := fmt.Sprintf("https://%s:6443", cfg.Masters[0].PrivateIP)
+	privateEndpoint := fmt.Sprintf("https://%s:6443", cfg.AdvertiseAddress)
 
 	var kubeconfigSepcs = map[string]*kubeconfigSpec{
 		kubeadmconstants.AdminKubeConfigFileName: {

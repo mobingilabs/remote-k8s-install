@@ -38,7 +38,10 @@ ExecStart=/usr/local/bin/kube-apiserver \\
   --secure-port=6443 \\
   --service-account-key-file=/etc/kubernetes/pki/sa.pub \\
   --tls-cert-file=/etc/kubernetes/pki/apiserver.crt \\
-  --tls-private-key-file=/etc/kubernetes/pki/apiserver.key 
+	--tls-private-key-file=/etc/kubernetes/pki/apiserver.key \\
+	--etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt \\
+	--etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt \\
+	--etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key 
 Restart=on-failure
 RestartSec=5
 
@@ -48,14 +51,15 @@ WantedBy=multi-user.target`
 // TODO more data from config to flexible
 type apiserverTemplateData struct {
 	// now it is a private ip
-	IP          string
-	EtcdServers string
+	IP               string
+	EtcdServers      string
+	AdvertiseAddress string
 }
 
-func NewRunAPIServerJobs(ips []string, etcdServers string) ([]*machine.Job, error) {
+func NewRunAPIServerJobs(ips []string, etcdServers, advertiseAddress string) ([]*machine.Job, error) {
 	jobs := make([]*machine.Job, 0, len(ips))
 	for _, v := range ips {
-		serviceData, err := getAPIServerServiceFile(v, etcdServers)
+		serviceData, err := getAPIServerServiceFile(v, etcdServers, advertiseAddress)
 		if err != nil {
 			return nil, err
 		}
@@ -63,15 +67,17 @@ func NewRunAPIServerJobs(ips []string, etcdServers string) ([]*machine.Job, erro
 		job := machine.NewJob("kube-apiserver-service")
 		job.AddCmd(cmdutil.NewWriteCmd(filepath.Join(constants.ServiceDir, constants.KubeApiserverService), string(serviceData)))
 		job.AddCmd(cmdutil.NewSystemStartCmd(constants.KubeApiserverService))
+		jobs = append(jobs, job)
 	}
 
 	return jobs, nil
 }
 
-func getAPIServerServiceFile(ip, etcdServers string) ([]byte, error) {
+func getAPIServerServiceFile(ip, etcdServers, advertiseAddress string) ([]byte, error) {
 	templateData := apiserverTemplateData{
-		IP:          ip,
-		EtcdServers: etcdServers,
+		IP:               ip,
+		EtcdServers:      etcdServers,
+		AdvertiseAddress: advertiseAddress,
 	}
 	data, err := templateutil.Parse(apiserverServiceTemplate, templateData)
 	if err != nil {

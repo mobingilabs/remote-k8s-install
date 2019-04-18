@@ -147,6 +147,8 @@ func getAPIServerAltNames(cfg *config) (*certutil.AltNames, error) {
 		},
 	}
 
+	appendSANsToAltNames(altNames, cfg.SANs)
+
 	//TODO fix up
 
 	return altNames, nil

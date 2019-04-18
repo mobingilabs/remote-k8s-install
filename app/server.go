@@ -1,13 +1,11 @@
 package app
 
 import (
-	"mobingi/ocean/app/phases/master"
+	"io/ioutil"
 	"mobingi/ocean/app/phases/node"
 	"mobingi/ocean/pkg/config"
-	"mobingi/ocean/pkg/constants"
 	"mobingi/ocean/pkg/kubernetes/bootstrap"
 	"mobingi/ocean/pkg/log"
-	"mobingi/ocean/pkg/tools/cache"
 	"mobingi/ocean/pkg/tools/machine"
 )
 
@@ -16,15 +14,18 @@ func Start() error {
 	if err != nil {
 		return err
 	}
-	if err := master.InstallMasters(cfg); err != nil {
-		return err
-	}
+	/*
+		if err := master.InstallMasters(cfg); err != nil {
+			return err
+		}
 
-	return nil
+		return nil*/
 
-	adminConf, _ := cache.GetOne(constants.KubeconfPrefix, "admin.conf")
+	//adminConf, _ := cache.GetOne(constants.KubeconfPrefix, "admin.conf")
 
-	bootstrapconf, err := bootstrap.Bootstrap(adminConf.([]byte))
+	adminData, _ := ioutil.ReadFile("admin.conf")
+
+	bootstrapconf, err := bootstrap.Bootstrap(adminData)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -35,7 +36,7 @@ func Start() error {
 		Password: cfg.Nodes[0].Password,
 	}
 
-	if err := node.Join(adminConf.([]byte), bootstrapconf, cfg.DownloadBinSite, mi); err != nil {
+	if err := node.Join(adminData, bootstrapconf, cfg.DownloadBinSite, mi); err != nil {
 		return err
 	}
 

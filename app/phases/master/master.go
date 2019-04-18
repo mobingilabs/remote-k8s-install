@@ -62,7 +62,7 @@ func InstallMasters(cfg *config.Config) error {
 	runEtcdCluster(machines, privateIPs)
 
 	etcdServers := service.GetEtcdServers(privateIPs)
-	runControlPlane(machines, privateIPs, etcdServers)
+	runControlPlane(machines, privateIPs, etcdServers, cfg.AdvertiseAddress)
 
 	return nil
 }
@@ -127,16 +127,18 @@ func runEtcdCluster(machines []machine.Machine, privateIPs []string) {
 	log.Info("etcd run")
 }
 
-func runControlPlane(machines []machine.Machine, privateIPs []string, etcdServers string) {
-	controlPlaneJobs, err := service.NewRunControlPlaneJobs(privateIPs, etcdServers)
+func runControlPlane(machines []machine.Machine, privateIPs []string, etcdServers, advertiseAddress string) {
+	controlPlaneJobs, err := service.NewRunControlPlaneJobs(privateIPs, etcdServers, advertiseAddress)
 	if err != nil {
 		log.Panic(err)
 	}
 
 	g := group.NewGroup(len(machines))
 	for i, v := range machines {
+		m := v
+		j := i
 		g.Add(func() error {
-			return v.Run(controlPlaneJobs[i])
+			return m.Run(controlPlaneJobs[j])
 		})
 	}
 	errs := g.Run()
