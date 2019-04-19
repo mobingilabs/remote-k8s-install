@@ -133,6 +133,11 @@ func getAPIServerAltNames(cfg *config) (*certutil.AltNames, error) {
 		return nil, errors.New("must have advertiseAddress")
 	}
 
+	publicIP := net.ParseIP(cfg.PublicIP)
+	if publicIP == nil {
+		return nil, errors.New("must have public ip")
+	}
+
 	altNames := &certutil.AltNames{
 		DNSNames: []string{
 			"kubernetes",
@@ -144,6 +149,7 @@ func getAPIServerAltNames(cfg *config) (*certutil.AltNames, error) {
 			// TODO fix
 			//internalAPIServerVirtualIP,
 			advertiseAddress,
+			publicIP,
 		},
 	}
 

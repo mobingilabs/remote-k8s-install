@@ -10,6 +10,7 @@ type Config struct {
 	ClusterName      string `yaml:"clusterName"`
 	AdvertiseAddress string `yaml:"advertiseAddress"`
 	DownloadBinSite  string `yaml:"downloadBinSite"`
+	PublicIP         string `yaml:"publicIP"`
 
 	Masters []Machine
 	Nodes   []Machine

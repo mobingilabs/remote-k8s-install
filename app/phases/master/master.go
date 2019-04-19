@@ -4,6 +4,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
+	"time"
 
 	"mobingi/ocean/pkg/config"
 	"mobingi/ocean/pkg/constants"
@@ -21,7 +22,7 @@ import (
 // This will be a http handler
 func InstallMasters(cfg *config.Config) error {
 	sans := cfg.GetSANs()
-	certList, err := certs.CreatePKIAssets(cfg.AdvertiseAddress, sans)
+	certList, err := certs.CreatePKIAssets(cfg.AdvertiseAddress, cfg.PublicIP, sans)
 	if err != nil {
 		log.Panicf("cert create:%s", err.Error())
 	}
@@ -63,6 +64,9 @@ func InstallMasters(cfg *config.Config) error {
 
 	etcdServers := service.GetEtcdServers(privateIPs)
 	runControlPlane(machines, privateIPs, etcdServers, cfg.AdvertiseAddress)
+
+	// TODO wait for services up
+	time.Sleep(time.Second)
 
 	return nil
 }

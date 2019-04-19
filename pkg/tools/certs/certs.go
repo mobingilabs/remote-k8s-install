@@ -30,11 +30,13 @@ const (
 
 type config struct {
 	AdvertiseAddress string
-	SANs             []string //now is master machines private ip
+	PublicIP         string
+
+	SANs []string //now is master machines private ip
 }
 
 // CreatePKIAssets will create all pki file(includ etcd)
-func CreatePKIAssets(advertiseAddress string, SANs []string) (map[string][]byte, error) {
+func CreatePKIAssets(advertiseAddress, publicIP string, SANs []string) (map[string][]byte, error) {
 	certTree, err := getDefaultCertList().asMap().certTree()
 	if err != nil {
 		return nil, err
@@ -42,6 +44,7 @@ func CreatePKIAssets(advertiseAddress string, SANs []string) (map[string][]byte,
 	cfg := &config{
 		AdvertiseAddress: advertiseAddress,
 		SANs:             SANs,
+		PublicIP:         publicIP,
 	}
 	certs, err := certTree.createTree(cfg)
 	if err != nil {

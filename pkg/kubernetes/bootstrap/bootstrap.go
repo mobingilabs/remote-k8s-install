@@ -78,7 +78,7 @@ func getAPIServerURL(adminconf []byte) (string, error) {
 	}
 
 	// TODO may be we check the default-cluster is exist
-	return config.Clusters["default-cluster"].Server, nil
+	return config.Clusters["kubernetes"].Server, nil
 }
 
 func getCACertFromKubeconf(kubeconf []byte) ([]byte, error) {
@@ -87,5 +87,5 @@ func getCACertFromKubeconf(kubeconf []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	return config.Clusters["default-cluster"].CertificateAuthorityData, nil
+	return config.Clusters["kubernetes"].CertificateAuthorityData, nil
 }
