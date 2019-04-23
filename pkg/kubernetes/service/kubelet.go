@@ -112,7 +112,7 @@ syncFrequency: 1m0s
 volumeStatsAggPeriod: 1m0s`
 
 const kubeletFlagsFileName = "ocean-flags.env"
-const kubeletFlagsContent = `KUBELET_KUBEADM_ARGS=--cgroup-driver=systemd --network-plugin=cni --pod-infra-container-image=k8s.gcr.io/pause:3.1`
+const kubeletFlagsContent = `KUBELET_KUBEADM_ARGS=--cgroup-driver=systemd --network-plugin=cni --pod-infra-container-image=cnbailian/pause:3.1`
 
 func NewRunKubeletJob() *machine.Job {
 	job := machine.NewJob("kubelet-service")
