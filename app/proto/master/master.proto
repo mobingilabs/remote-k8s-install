@@ -1,0 +1,23 @@
+syntax = "proto3"; // 指定proto版本
+
+package master;
+
+// The greeting service definition.
+service Master {
+  // Sends a greeting
+  rpc Join (MasterConfig) returns (JoinResponse) {}
+}
+
+// The request message containing the user's name.
+message MasterConfig {
+  string publicIP = 1;
+  string privateIP = 2;
+  string user = 3;
+  string password = 4;
+}
+
+// The response message containing the greetings
+message JoinResponse {
+  string state = 1;
+  string message = 2;
+}
