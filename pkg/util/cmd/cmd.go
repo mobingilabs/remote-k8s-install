@@ -24,5 +24,9 @@ func NewTarXCmd(tgzName, dir string) string {
 }
 
 func NewCurlCmd(targetSite, filename string) string {
-	return "curl -L " + targetSite+filename + " -o /tmp/" + filename
+	return "curl -L " + targetSite + filename + " -o /tmp/" + filename
+}
+
+func NewSystemStopCmd(serviceName string) string {
+	return "systemctl stop " + serviceName
 }

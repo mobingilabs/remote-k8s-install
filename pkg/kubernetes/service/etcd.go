@@ -89,7 +89,7 @@ func newEtcdTemplateData(i int, ip, initialCluster, peerPort, clientPort string)
 }
 
 // NewRunEtcdJobs will write service file to disk and start etcd service
-func NewRunEtcdJobs(clusterIPs []string) ([]*machine.Job, error) {
+func NewRunEtcdJobs(clusterIPs []string, cretList map[string][]byte) ([]*machine.Job, error) {
 	jobs := make([]*machine.Job, 0, len(clusterIPs))
 	initalCluster := getInitialCluster(clusterIPs)
 	for i, v := range clusterIPs {
@@ -98,6 +98,14 @@ func NewRunEtcdJobs(clusterIPs []string) ([]*machine.Job, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		j.AddCmd(cmdutil.NewMkdirAllCmd(constants.WorkDir))
+		j.AddCmd(cmdutil.NewMkdirAllCmd(constants.PKIDir))
+		j.AddCmd(cmdutil.NewMkdirAllCmd(filepath.Join(constants.PKIDir, "etcd")))
+		for k, v := range cretList {
+			j.AddCmd(cmdutil.NewWriteCmd(filepath.Join(constants.WorkDir, "pki", k), string(v)))
+		}
+
 		j.AddCmd(cmdutil.NewWriteCmd(filepath.Join(constants.ServiceDir, constants.EtcdService), serviceData))
 		j.AddCmd(cmdutil.NewSystemStartCmd(constants.EtcdService))
 		jobs = append(jobs, j)

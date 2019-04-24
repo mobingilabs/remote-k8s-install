@@ -106,7 +106,7 @@ func (m *machine) doJob(j *Job) error {
 	for _, v := range j.Commands {
 		output, err := m.c.Do(v.Cmd)
 		if err != nil {
-			return err
+			return fmt.Errorf("Cmd %s : error %s", v.Cmd, err.Error())
 		}
 		if v.NeedCheck {
 			if !v.Check(output) {

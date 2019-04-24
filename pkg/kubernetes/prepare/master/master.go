@@ -7,6 +7,13 @@ import (
 	"path/filepath"
 )
 
+func NewOneJob(kubeconfs map[string][]byte) *machine.Job {
+	j := machine.NewJob("master-prepare")
+	setEnv(j)
+	writeKubeconfs(j, kubeconfs)
+	return j
+}
+
 // NewJob will craete dir all,set machine env,write pki files to disk, write kubeconf files to disk
 func NewJob(site string, certList map[string][]byte, kubeconfs map[string][]byte) *machine.Job {
 	j := machine.NewJob("master-prepare")
