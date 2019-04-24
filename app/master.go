@@ -3,7 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
-	pb "mobingi/ocean/app/proto/master"
+	pb "mobingi/ocean/app/proto"
 	"mobingi/ocean/pkg/constants"
 	preparemaster "mobingi/ocean/pkg/kubernetes/prepare/master"
 	"mobingi/ocean/pkg/kubernetes/service"
@@ -14,7 +14,7 @@ import (
 
 type master struct{}
 
-func (m *master) Join(ctx context.Context, cfg *pb.MasterConfig) (*pb.Response, error) {
+func (m *master) Join(ctx context.Context, cfg *pb.ServerConfig) (*pb.Response, error) {
 	job := preparemaster.NewOneJob(phasesmaster.Kubeconfs)
 	machine, err := machine.NewMachine(cfg.PublicIP, cfg.User, cfg.Password)
 	if err != nil {
@@ -43,29 +43,26 @@ func (m *master) Join(ctx context.Context, cfg *pb.MasterConfig) (*pb.Response, 
 		return nil, err
 	}
 
-	return &pb.Response{State: "success", Message: ""}, nil
+	return &pb.Response{Message: ""}, nil
 }
 
-func (m *master) Delete(ctx context.Context, cfg *pb.MasterConfig) (*pb.Response, error) {
+func (m *master) Delete(ctx context.Context, cfg *pb.ServerConfig) (*pb.Response, error) {
 	machines, err := machine.NewMachine(cfg.PublicIP, cfg.User, cfg.Password)
 	if err != nil {
 		return nil, err
 	}
 
 	job := machine.NewJob("delete-master")
-	// job.AddCmd(cmd.NewSystemStopCmd(constants.EtcdService))
 	job.AddCmd(cmd.NewSystemStopCmd(constants.KubeApiserverService))
 	job.AddCmd(cmd.NewSystemStopCmd(constants.KubeControllerManagerService))
 	job.AddCmd(cmd.NewSystemStopCmd(constants.KubeSchedulerService))
-	// job.AddCmd("rm /etc/systemd/system/etcd.service")
 	job.AddCmd("rm /etc/systemd/system/kube-apiserver.service")
 	job.AddCmd("rm /etc/systemd/system/kube-controller-manager.service")
 	job.AddCmd("rm /etc/systemd/system/kube-scheduler.service")
 	job.AddCmd("rm -rf /etc/kubernetes")
-	// job.AddCmd("rm -rf /var/lib/etcd")
 	err = machines.Run(job)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.Response{State: "success", Message: ""}, nil
+	return &pb.Response{Message: ""}, nil
 }
