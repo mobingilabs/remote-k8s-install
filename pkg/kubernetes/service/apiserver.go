@@ -74,6 +74,18 @@ func NewRunAPIServerJobs(ips []string, etcdServers, advertiseAddress string) ([]
 	return jobs, nil
 }
 
+func NewOneRunAPIServerJob(ip string, etcdServers, advertiseAddress string) (*machine.Job, error) {
+	serviceData, err := getAPIServerServiceFile(ip, etcdServers, advertiseAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	job := machine.NewJob("kube-apiserver-service")
+	job.AddCmd(cmdutil.NewWriteCmd(filepath.Join(constants.ServiceDir, constants.KubeApiserverService), string(serviceData)))
+	job.AddCmd(cmdutil.NewSystemStartCmd(constants.KubeApiserverService))
+	return job, nil
+}
+
 func getAPIServerServiceFile(ip, etcdServers, advertiseAddress string) ([]byte, error) {
 	templateData := apiserverTemplateData{
 		IP:               ip,

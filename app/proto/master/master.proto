@@ -5,7 +5,8 @@ package master;
 // The greeting service definition.
 service Master {
   // Sends a greeting
-  rpc Join (MasterConfig) returns (JoinResponse) {}
+  rpc Join (MasterConfig) returns (Response) {}
+  rpc Delete (MasterConfig) returns (Response) {}
 }
 
 // The request message containing the user's name.
@@ -17,7 +18,7 @@ message MasterConfig {
 }
 
 // The response message containing the greetings
-message JoinResponse {
+message Response {
   string state = 1;
   string message = 2;
 }

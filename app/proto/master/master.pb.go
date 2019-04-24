@@ -87,7 +87,7 @@ func (m *MasterConfig) GetPassword() string {
 }
 
 // The response message containing the greetings
-type JoinResponse struct {
+type Response struct {
 	State                string   `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
 	Message              string   `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -95,39 +95,39 @@ type JoinResponse struct {
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *JoinResponse) Reset()         { *m = JoinResponse{} }
-func (m *JoinResponse) String() string { return proto.CompactTextString(m) }
-func (*JoinResponse) ProtoMessage()    {}
-func (*JoinResponse) Descriptor() ([]byte, []int) {
+func (m *Response) Reset()         { *m = Response{} }
+func (m *Response) String() string { return proto.CompactTextString(m) }
+func (*Response) ProtoMessage()    {}
+func (*Response) Descriptor() ([]byte, []int) {
 	return fileDescriptor_f9c348dec43a6705, []int{1}
 }
 
-func (m *JoinResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_JoinResponse.Unmarshal(m, b)
+func (m *Response) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Response.Unmarshal(m, b)
 }
-func (m *JoinResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_JoinResponse.Marshal(b, m, deterministic)
+func (m *Response) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Response.Marshal(b, m, deterministic)
 }
-func (m *JoinResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_JoinResponse.Merge(m, src)
+func (m *Response) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Response.Merge(m, src)
 }
-func (m *JoinResponse) XXX_Size() int {
-	return xxx_messageInfo_JoinResponse.Size(m)
+func (m *Response) XXX_Size() int {
+	return xxx_messageInfo_Response.Size(m)
 }
-func (m *JoinResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_JoinResponse.DiscardUnknown(m)
+func (m *Response) XXX_DiscardUnknown() {
+	xxx_messageInfo_Response.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_JoinResponse proto.InternalMessageInfo
+var xxx_messageInfo_Response proto.InternalMessageInfo
 
-func (m *JoinResponse) GetState() string {
+func (m *Response) GetState() string {
 	if m != nil {
 		return m.State
 	}
 	return ""
 }
 
-func (m *JoinResponse) GetMessage() string {
+func (m *Response) GetMessage() string {
 	if m != nil {
 		return m.Message
 	}
@@ -136,26 +136,26 @@ func (m *JoinResponse) GetMessage() string {
 
 func init() {
 	proto.RegisterType((*MasterConfig)(nil), "master.MasterConfig")
-	proto.RegisterType((*JoinResponse)(nil), "master.JoinResponse")
+	proto.RegisterType((*Response)(nil), "master.Response")
 }
 
 func init() { proto.RegisterFile("master.proto", fileDescriptor_f9c348dec43a6705) }
 
 var fileDescriptor_f9c348dec43a6705 = []byte{
-	// 199 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x4c, 0x90, 0x31, 0x6f, 0x83, 0x30,
-	0x10, 0x85, 0x4b, 0x4b, 0x69, 0x39, 0x31, 0x9d, 0x18, 0x2c, 0xd4, 0xa1, 0x62, 0xea, 0xc4, 0xd0,
-	0x76, 0x66, 0xe9, 0x44, 0xa5, 0x4a, 0x88, 0x7f, 0x60, 0x9a, 0x0b, 0xb2, 0x14, 0xb0, 0xe5, 0x33,
-	0x49, 0x7e, 0x7e, 0x14, 0xe3, 0x10, 0xb6, 0xfb, 0xde, 0x93, 0xde, 0xf3, 0x33, 0x64, 0xa3, 0x64,
-	0x47, 0xb6, 0x32, 0x56, 0x3b, 0x8d, 0xc9, 0x42, 0xe5, 0x19, 0xb2, 0x3f, 0x7f, 0xfd, 0xe8, 0x69,
-	0xaf, 0x06, 0x2c, 0xe0, 0xd5, 0xcc, 0xfd, 0x41, 0xfd, 0x37, 0xad, 0x88, 0xde, 0xa3, 0x8f, 0xb4,
-	0x5b, 0x19, 0xdf, 0x20, 0x35, 0x56, 0x1d, 0xa5, 0xa3, 0xa6, 0x15, 0x8f, 0xde, 0xbc, 0x0b, 0x88,
-	0x10, 0xcf, 0x4c, 0x56, 0x3c, 0x79, 0xc3, 0xdf, 0x3e, 0x4d, 0x32, 0x9f, 0xb4, 0xdd, 0x89, 0x38,
-	0xa4, 0x05, 0x2e, 0x6b, 0xc8, 0x7e, 0xb5, 0x9a, 0x3a, 0x62, 0xa3, 0x27, 0x26, 0xcc, 0xe1, 0x99,
-	0x9d, 0x74, 0x14, 0x6a, 0x17, 0x40, 0x01, 0x2f, 0x23, 0x31, 0xcb, 0x81, 0x42, 0xe3, 0x0d, 0x3f,
-	0x6b, 0x48, 0x96, 0x97, 0xe3, 0x37, 0xc4, 0xd7, 0x24, 0xcc, 0xab, 0x30, 0x71, 0xbb, 0xa8, 0x58,
-	0xd5, 0x6d, 0x5b, 0xf9, 0xd0, 0x27, 0xfe, 0x23, 0xbe, 0x2e, 0x01, 0x00, 0x00, 0xff, 0xff, 0x80,
-	0xac, 0x61, 0x56, 0x18, 0x01, 0x00, 0x00,
+	// 208 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x90, 0xb1, 0x4b, 0xc6, 0x30,
+	0x10, 0xc5, 0xfd, 0xb4, 0xc6, 0xaf, 0x47, 0x07, 0x39, 0x3a, 0x84, 0xe2, 0x20, 0x9d, 0x9c, 0x8a,
+	0xd4, 0xcd, 0x55, 0x97, 0x0a, 0x42, 0xe9, 0x7f, 0x90, 0xea, 0x59, 0x02, 0x6d, 0x12, 0x72, 0xa9,
+	0xfa, 0xe7, 0x0b, 0x69, 0xaa, 0x8e, 0xdf, 0x76, 0xbf, 0x7b, 0xe4, 0xbd, 0xbc, 0x83, 0x62, 0x51,
+	0x1c, 0xc8, 0x37, 0xce, 0xdb, 0x60, 0x51, 0x6c, 0x54, 0x7f, 0x43, 0xf1, 0x1a, 0xa7, 0x27, 0x6b,
+	0x3e, 0xf4, 0x84, 0x15, 0x1c, 0xdd, 0x3a, 0xce, 0xfa, 0xad, 0xeb, 0xe5, 0xe1, 0xf6, 0x70, 0x97,
+	0x0f, 0xbf, 0x8c, 0x37, 0x90, 0x3b, 0xaf, 0x3f, 0x55, 0xa0, 0xae, 0x97, 0xe7, 0x51, 0xfc, 0x5b,
+	0x20, 0x42, 0xb6, 0x32, 0x79, 0x79, 0x11, 0x85, 0x38, 0x47, 0x37, 0xc5, 0xfc, 0x65, 0xfd, 0xbb,
+	0xcc, 0x92, 0x5b, 0xe2, 0xfa, 0x11, 0x8e, 0x03, 0xb1, 0xb3, 0x86, 0x09, 0x4b, 0xb8, 0xe4, 0xa0,
+	0x02, 0xa5, 0xc8, 0x0d, 0x50, 0xc2, 0xd5, 0x42, 0xcc, 0x6a, 0xa2, 0x94, 0xb6, 0x63, 0x6b, 0x40,
+	0x6c, 0xbf, 0xc6, 0x7b, 0xc8, 0x5e, 0xac, 0x36, 0x58, 0x36, 0xa9, 0xde, 0xff, 0x36, 0xd5, 0xf5,
+	0xbe, 0xdd, 0x93, 0xea, 0x33, 0x6c, 0x41, 0x3c, 0xd3, 0x4c, 0x81, 0x4e, 0x7f, 0x33, 0x8a, 0x78,
+	0xb4, 0x87, 0x9f, 0x00, 0x00, 0x00, 0xff, 0xff, 0xb8, 0x03, 0xd7, 0x34, 0x44, 0x01, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -171,7 +171,8 @@ const _ = grpc.SupportPackageIsVersion4
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MasterClient interface {
 	// Sends a greeting
-	Join(ctx context.Context, in *MasterConfig, opts ...grpc.CallOption) (*JoinResponse, error)
+	Join(ctx context.Context, in *MasterConfig, opts ...grpc.CallOption) (*Response, error)
+	Delete(ctx context.Context, in *MasterConfig, opts ...grpc.CallOption) (*Response, error)
 }
 
 type masterClient struct {
@@ -182,9 +183,18 @@ func NewMasterClient(cc *grpc.ClientConn) MasterClient {
 	return &masterClient{cc}
 }
 
-func (c *masterClient) Join(ctx context.Context, in *MasterConfig, opts ...grpc.CallOption) (*JoinResponse, error) {
-	out := new(JoinResponse)
+func (c *masterClient) Join(ctx context.Context, in *MasterConfig, opts ...grpc.CallOption) (*Response, error) {
+	out := new(Response)
 	err := c.cc.Invoke(ctx, "/master.Master/Join", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *masterClient) Delete(ctx context.Context, in *MasterConfig, opts ...grpc.CallOption) (*Response, error) {
+	out := new(Response)
+	err := c.cc.Invoke(ctx, "/master.Master/Delete", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +204,8 @@ func (c *masterClient) Join(ctx context.Context, in *MasterConfig, opts ...grpc.
 // MasterServer is the server API for Master service.
 type MasterServer interface {
 	// Sends a greeting
-	Join(context.Context, *MasterConfig) (*JoinResponse, error)
+	Join(context.Context, *MasterConfig) (*Response, error)
+	Delete(context.Context, *MasterConfig) (*Response, error)
 }
 
 func RegisterMasterServer(s *grpc.Server, srv MasterServer) {
@@ -219,6 +230,24 @@ func _Master_Join_Handler(srv interface{}, ctx context.Context, dec func(interfa
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Master_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MasterConfig)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MasterServer).Delete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/master.Master/Delete",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MasterServer).Delete(ctx, req.(*MasterConfig))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Master_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "master.Master",
 	HandlerType: (*MasterServer)(nil),
@@ -226,6 +255,10 @@ var _Master_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Join",
 			Handler:    _Master_Join_Handler,
+		},
+		{
+			MethodName: "Delete",
+			Handler:    _Master_Delete_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

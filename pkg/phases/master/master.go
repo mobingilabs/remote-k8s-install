@@ -3,9 +3,11 @@ package master
 import (
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"time"
 
+	"database/sql"
 	"mobingi/ocean/pkg/config"
 	"mobingi/ocean/pkg/constants"
 	preparemaster "mobingi/ocean/pkg/kubernetes/prepare/master"
@@ -17,7 +19,105 @@ import (
 	"mobingi/ocean/pkg/tools/machine"
 	"mobingi/ocean/pkg/util/group"
 	pkiutil "mobingi/ocean/pkg/util/pki"
+
+	_ "github.com/go-sql-driver/mysql"
 )
+
+type configSql struct {
+	id      int
+	name    string
+	context string
+}
+
+var CertList map[string][]byte
+var Kubeconfs map[string][]byte
+var MasterCommonConfig *config.Config
+var EtcdServers string
+
+func Init(cfg *config.Config) error {
+	MasterCommonConfig = cfg
+	db, err := sql.Open("mysql", "root:123456789@/kubeconf")
+	if err != nil {
+		log.Panicf("conn: %s", err.Error())
+	}
+	defer db.Close()
+
+	CertList, err = getConfigBySql(db, "certs", func() (map[string][]byte, error) {
+		sans := cfg.GetSANs()
+		return certs.CreatePKIAssets(cfg.AdvertiseAddress, cfg.PublicIP, sans)
+	})
+	if err != nil {
+		log.Panicf("cert create:%s", err.Error())
+	}
+
+	Kubeconfs, err = getConfigBySql(db, "kubeconfs", func() (map[string][]byte, error) {
+		caCert, caKey, err := getCaCertAndKey(CertList)
+		if err != nil {
+			log.Panicf("get ca cert and key :%s", err.Error())
+		}
+		return kubeconf.CreateKubeconf(cfg, caCert, caKey)
+	})
+	if err != nil {
+		log.Panicf("cert create:%s", err.Error())
+	}
+
+	log.Info("kubeconf create")
+
+	machines := newMachines(cfg)
+	privateIPs := cfg.GetMasterPrivateIPs()
+	runEtcdCluster(machines, privateIPs)
+	EtcdServers = service.GetEtcdServers(privateIPs)
+
+	log.Info("Etcd cluster create")
+
+	return nil
+}
+
+func emptyDBConfig(db *sql.DB) {
+	_, err := db.Exec("DELETE FROM config")
+	if err != nil {
+		log.Panic(err.Error())
+	}
+}
+
+func getConfigBySql(db *sql.DB, name string, callback func() (map[string][]byte, error)) (map[string][]byte, error) {
+	var config map[string][]byte
+	rows, err := db.Query("SELECT * FROM config WHERE name = ? LIMIT 1", name)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var context configSql
+		if err := rows.Scan(&context.id, &context.name, &context.context); err != nil {
+			log.Panic(err.Error())
+		}
+		err := json.Unmarshal([]byte(context.context), &config)
+		if err != nil {
+			log.Panic(err.Error())
+		}
+	}
+	if len(config) == 0 {
+		config, err = callback()
+		if err != nil {
+			return nil, err
+		}
+		log.Info("cert create")
+
+		configJSON, err := json.Marshal(config)
+		if err != nil {
+			return nil, err
+		}
+		_, err = db.Exec(
+			"INSERT INTO config (name, context) VALUES (?, ?)",
+			name,
+			string(configJSON),
+		)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return config, nil
+}
 
 // This will be a http handler
 func InstallMasters(cfg *config.Config) error {
@@ -108,7 +208,7 @@ func newMachines(cfg *config.Config) []machine.Machine {
 }
 
 func runEtcdCluster(machines []machine.Machine, privateIPs []string) {
-	etcdRunJobs, err := service.NewRunEtcdJobs(privateIPs)
+	etcdRunJobs, err := service.NewRunEtcdJobs(privateIPs, CertList)
 	if err != nil {
 		panic(err)
 	}
