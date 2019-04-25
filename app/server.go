@@ -2,9 +2,7 @@ package app
 
 import (
 	pb "mobingi/ocean/app/proto"
-	"mobingi/ocean/pkg/config"
 	"mobingi/ocean/pkg/log"
-	phasesmaster "mobingi/ocean/pkg/phases/master"
 	"net"
 
 	"google.golang.org/grpc"
@@ -15,13 +13,13 @@ const (
 )
 
 func Start() error {
-	cfg, err := config.LoadConfigFromFile("config.yaml")
-	if err != nil {
-		return err
-	}
-	if err := phasesmaster.Init(cfg); err != nil {
-		return err
-	}
+	// cfg, err := config.LoadConfigFromFile("config.yaml")
+	// if err != nil {
+	// 	return err
+	// }
+	// if err := phasesmaster.Init(cfg); err != nil {
+	// 	return err
+	// }
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Errorf("failed to listen: %v", err)
@@ -29,6 +27,7 @@ func Start() error {
 	s := grpc.NewServer()
 
 	pb.RegisterMasterServer(s, &master{})
+	pb.RegisterClusterServer(s, &cluster{})
 	if err := s.Serve(lis); err != nil {
 		log.Errorf("failed to serve: %v", err)
 	}

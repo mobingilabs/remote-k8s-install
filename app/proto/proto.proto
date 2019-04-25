@@ -24,7 +24,7 @@ message ClusterConfig {
   string advertiseAddress = 2;
   string publicIP = 3;
   string downloadBinSite = 4;
-  repeated ServerConfig clusterMasters = 5;
+  repeated ServerConfig masters = 5;
 }
 
 // Master

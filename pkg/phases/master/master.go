@@ -5,15 +5,12 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"database/sql"
 	"mobingi/ocean/pkg/config"
 	"mobingi/ocean/pkg/constants"
-	preparemaster "mobingi/ocean/pkg/kubernetes/prepare/master"
 	"mobingi/ocean/pkg/kubernetes/service"
 	"mobingi/ocean/pkg/log"
-	"mobingi/ocean/pkg/tools/cache"
 	"mobingi/ocean/pkg/tools/certs"
 	"mobingi/ocean/pkg/tools/kubeconf"
 	"mobingi/ocean/pkg/tools/machine"
@@ -120,56 +117,56 @@ func getConfigBySql(db *sql.DB, name string, callback func() (map[string][]byte,
 }
 
 // This will be a http handler
-func InstallMasters(cfg *config.Config) error {
-	sans := cfg.GetSANs()
-	certList, err := certs.CreatePKIAssets(cfg.AdvertiseAddress, cfg.PublicIP, sans)
-	if err != nil {
-		log.Panicf("cert create:%s", err.Error())
-	}
-	log.Info("cert create")
+// func InstallMasters(cfg *config.Config) error {
+// 	sans := cfg.GetSANs()
+// 	certList, err := certs.CreatePKIAssets(cfg.AdvertiseAddress, cfg.PublicIP, sans)
+// 	if err != nil {
+// 		log.Panicf("cert create:%s", err.Error())
+// 	}
+// 	log.Info("cert create")
 
-	caCert, caKey, err := getCaCertAndKey(certList)
-	if err != nil {
-		log.Panicf("get ca cert and key :%s", err.Error())
-	}
-	kubeconfs, err := kubeconf.CreateKubeconf(cfg, caCert, caKey)
-	if err != nil {
-		log.Panicf("create kube conf :%s", err.Error())
-	}
-	log.Info("kubeconf create")
-	// TODO we will put confs to store, not cache
-	cache.Put(constants.KubeconfPrefix, "admin.conf", kubeconfs["admin.conf"])
+// 	caCert, caKey, err := getCaCertAndKey(certList)
+// 	if err != nil {
+// 		log.Panicf("get ca cert and key :%s", err.Error())
+// 	}
+// 	kubeconfs, err := kubeconf.CreateKubeconf(cfg, caCert, caKey)
+// 	if err != nil {
+// 		log.Panicf("create kube conf :%s", err.Error())
+// 	}
+// 	log.Info("kubeconf create")
+// 	// TODO we will put confs to store, not cache
+// 	cache.Put(constants.KubeconfPrefix, "admin.conf", kubeconfs["admin.conf"])
 
-	machines := newMachines(cfg)
-	log.Info("machine init")
+// 	machines := newMachines(cfg)
+// 	log.Info("machine init")
 
-	g := group.NewGroup(len(cfg.Masters))
-	job := preparemaster.NewJob(cfg.DownloadBinSite, certList, kubeconfs)
-	for _, v := range machines {
-		m := v
-		g.Add(func() error {
-			return m.Run(job)
-		})
-	}
-	errs := g.Run()
-	for _, v := range errs {
-		if v != nil {
-			log.Panicf("master prepare:%s", v.Error())
-		}
-	}
-	log.Info("master prepare")
+// 	g := group.NewGroup(len(cfg.Masters))
+// 	job := preparemaster.NewJob(cfg.DownloadBinSite, certList, kubeconfs)
+// 	for _, v := range machines {
+// 		m := v
+// 		g.Add(func() error {
+// 			return m.Run(job)
+// 		})
+// 	}
+// 	errs := g.Run()
+// 	for _, v := range errs {
+// 		if v != nil {
+// 			log.Panicf("master prepare:%s", v.Error())
+// 		}
+// 	}
+// 	log.Info("master prepare")
 
-	privateIPs := cfg.GetMasterPrivateIPs()
-	runEtcdCluster(machines, privateIPs)
+// 	privateIPs := cfg.GetMasterPrivateIPs()
+// 	runEtcdCluster(machines, privateIPs)
 
-	etcdServers := service.GetEtcdServers(privateIPs)
-	runControlPlane(machines, privateIPs, etcdServers, cfg.AdvertiseAddress)
+// 	etcdServers := service.GetEtcdServers(privateIPs)
+// 	runControlPlane(machines, privateIPs, etcdServers, cfg.AdvertiseAddress)
 
-	// TODO wait for services up
-	time.Sleep(time.Second)
+// 	// TODO wait for services up
+// 	time.Sleep(time.Second)
 
-	return nil
-}
+// 	return nil
+// }
 
 // it will be remove
 func getCaCertAndKey(certList map[string][]byte) (*x509.Certificate, *rsa.PrivateKey, error) {
