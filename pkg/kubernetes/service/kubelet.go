@@ -25,7 +25,7 @@ const kubeletServicedDir = "kubelet.service.d"
 const kubeletServicedName = "10-ocean.conf"
 const kubeletServicedFileContent = `
 [Service]
-Environment="KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf"
+Environment="KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/admin.conf --kubeconfig=/etc/kubernetes/kubelet.conf --pod-manifest-path=/etc/kubelet.d/"
 Environment="KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml"
 EnvironmentFile=-/var/lib/kubelet/ocean-flags.env
 EnvironmentFile=-/etc/sysconfig/kubelet
@@ -123,6 +123,27 @@ func NewRunKubeletJob() *machine.Job {
 	job.AddCmd(cmdutil.NewWriteCmd(filepath.Join(constants.ServiceDir, kubeletServicedDir, kubeletServicedName), kubeletServicedFileContent))
 	job.AddCmd(cmdutil.NewWriteCmd(filepath.Join(kubeletConfigDir, kubeletConfigName), kubeletConfigYAML))
 	job.AddCmd(cmdutil.NewWriteCmd(filepath.Join(kubeletConfigDir, kubeletFlagsFileName), kubeletFlagsContent))
+	job.AddCmd(cmdutil.NewSystemStartCmd(constants.KubeletService))
+
+	return job
+}
+
+const kubeletStaticPodDir = "/etc/kubelet.d/"
+const masrerKubeletServicedFileContent = `
+[Service]
+Environment="KUBELET_KUBECONFIG_ARGS=--cgroup-driver=systemd --runtime-cgroups=/systemd/system.slice --kubelet-cgroups=/systemd/system.slice --fail-swap-on=false --pod-manifest-path=/etc/kubelet.d/"
+ExecStart=
+ExecStart=/usr/local/bin/kubelet \$KUBELET_KUBECONFIG_ARGS
+`
+
+func NewRunMasterKubeletJob() *machine.Job {
+	job := machine.NewJob("master-kubelet-service")
+
+	job.AddCmd(cmdutil.NewMkdirAllCmd(filepath.Join(constants.ServiceDir, kubeletServicedDir)))
+	job.AddCmd(cmdutil.NewMkdirAllCmd(kubeletConfigDir))
+	job.AddCmd(cmdutil.NewMkdirAllCmd(kubeletStaticPodDir))
+	job.AddCmd(cmdutil.NewWriteCmd(filepath.Join(constants.ServiceDir, constants.KubeletService), kubeletServiceTemplate))
+	job.AddCmd(cmdutil.NewWriteCmd(filepath.Join(constants.ServiceDir, kubeletServicedDir, kubeletServicedName), masrerKubeletServicedFileContent))
 	job.AddCmd(cmdutil.NewSystemStartCmd(constants.KubeletService))
 
 	return job

@@ -24,7 +24,7 @@ type Kubeconf interface {
 	GetKubeconf(name string) ([]byte, error)
 }
 
-func NewStorage(driver Cluster, cfg *config.Config) (*Cluster, error) {
+func NewStorage(driver Cluster, cfg *config.Config) (Cluster, error) {
 	driver.Init(cfg)
-	return &driver, nil
+	return driver, nil
 }

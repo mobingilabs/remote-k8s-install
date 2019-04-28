@@ -4,7 +4,13 @@ import (
 	"context"
 	pb "mobingi/ocean/app/proto"
 	"mobingi/ocean/pkg/config"
-	"mobingi/ocean/pkg/storage"
+	preparemaster "mobingi/ocean/pkg/kubernetes/prepare/master"
+	"mobingi/ocean/pkg/kubernetes/service"
+	"mobingi/ocean/pkg/log"
+	phasesmaster "mobingi/ocean/pkg/phases/master"
+	configstorage "mobingi/ocean/pkg/storage"
+	"mobingi/ocean/pkg/tools/machine"
+	"mobingi/ocean/pkg/util/group"
 )
 
 type cluster struct{}
@@ -29,55 +35,56 @@ func (c *cluster) Init(ctx context.Context, ccfg *pb.ClusterConfig) (*pb.Respons
 	}
 
 	// TODO Move to main init func
-	storage.NewMongoClient()
+	configstorage.NewMongoClient()
 
-	_, err := storage.NewStorage(&storage.ClusterMongo{}, cfg)
+	storage, err := configstorage.NewStorage(&configstorage.ClusterMongo{}, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	// sans := cfg.GetSANs()
-	// _, err := certs.CreatePKIAssets(cfg.AdvertiseAddress, cfg.PublicIP, sans)
+	certs, err := storage.AllCerts()
+	if err != nil {
+		return nil, err
+	}
+	kubeconfs, err := storage.AllKubeconfs()
+	if err != nil {
+		return nil, err
+	}
 
-	// db, err := sql.Open("mysql", "root:123456789@/kubeconf")
-	// if err != nil {
-	// 	log.Panicf("conn: %s", err.Error())
-	// }
-	// defer db.Close()
+	machines := newMachines(cfg)
+	log.Info("machine init")
 
-	// certList, err := getConfigBySql(db, "certs", func() (map[string][]byte, error) {
-	// 	sans := cfg.GetSANs()
-	// 	return certs.CreatePKIAssets(cfg.AdvertiseAddress, cfg.PublicIP, sans)
-	// })
-	// if err != nil {
-	// 	log.Panicf("cert create:%s", err.Error())
-	// }
+	job := preparemaster.NewJob(cfg.DownloadBinSite, certs, kubeconfs)
+	phasesmaster.InstallDocker(job)
+	job.AddAnother(service.NewRunMasterKubeletJob())
 
-	// caCert, caKey, err := getCaCertAndKey(certList)
-	// if err != nil {
-	// 	log.Panicf("get ca cert and key :%s", err.Error())
-	// }
-	// kubeconfs, err := kubeconf.CreateKubeconf(cfg, caCert, caKey)
-
-	// kubeconfs, err := getConfigBySql(db, "kubeconfs", func() (map[string][]byte, error) {
-	// 	caCert, caKey, err := getCaCertAndKey(certList)
-	// 	if err != nil {
-	// 		log.Panicf("get ca cert and key :%s", err.Error())
-	// 	}
-	// 	return kubeconf.CreateKubeconf(cfg, caCert, caKey)
-	// })
-	// if err != nil {
-	// 	log.Panicf("cert create:%s", err.Error())
-	// }
-
-	// log.Info("kubeconf create")
-
-	// machines := newMachines(cfg)
-	// privateIPs := cfg.GetMasterPrivateIPs()
-	// runEtcdCluster(machines, privateIPs)
-	// EtcdServers = service.GetEtcdServers(privateIPs)
-
-	// log.Info("Etcd cluster create")
+	g := group.NewGroup(len(cfg.Masters))
+	for _, v := range machines {
+		m := v
+		g.Add(func() error {
+			return m.Run(job)
+		})
+	}
+	errs := g.Run()
+	for _, v := range errs {
+		if v != nil {
+			return nil, err
+		}
+	}
+	log.Info("master prepare")
 
 	return &pb.Response{Message: ""}, nil
+}
+
+func newMachines(cfg *config.Config) []machine.Machine {
+	machines := make([]machine.Machine, 0, len(cfg.Masters))
+	for _, v := range cfg.Masters {
+		machine, err := machine.NewMachine(v.PublicIP, v.User, v.Password)
+		if err != nil {
+			log.Panicf("new machine :%s", err.Error())
+		}
+		machines = append(machines, machine)
+	}
+
+	return machines
 }

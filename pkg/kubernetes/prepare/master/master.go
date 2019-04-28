@@ -32,6 +32,7 @@ func mkdir(j *machine.Job) {
 	j.AddCmd(cmdutil.NewMkdirAllCmd(constants.WorkDir))
 	j.AddCmd(cmdutil.NewMkdirAllCmd(constants.PKIDir))
 	j.AddCmd(cmdutil.NewMkdirAllCmd(filepath.Join(constants.PKIDir, "etcd")))
+	j.AddCmd(cmdutil.NewMkdirAllCmd("/opt/bin/cni"))
 }
 
 func setEnv(j *machine.Job) {
