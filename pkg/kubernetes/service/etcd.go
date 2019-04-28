@@ -24,14 +24,14 @@ Documentation=https://github.com/coreos
 
 [Service]
 ExecStart={{.BinDir}}/etcd \\
-  --name={{.Name}} \\
+  	--name={{.Name}} \\
 	--initial-advertise-peer-urls=https://{{.IP}}:{{.PeerPort}} \\
-  --listen-peer-urls=https://{{.IP}}:{{.PeerPort}} \\
-  --listen-client-urls=https://{{.IP}}:{{.ClientPort}} \\
-  --advertise-client-urls=https://{{.IP}}:{{.ClientPort}} \\
+  	--listen-peer-urls=https://{{.IP}}:{{.PeerPort}} \\
+  	--listen-client-urls=https://{{.IP}}:{{.ClientPort}} \\
+  	--advertise-client-urls=https://{{.IP}}:{{.ClientPort}} \\
 	--initial-cluster-token=etcd-cluster \\
 	--initial-cluster={{.InitialCluster}} \\
-  --initial-cluster-state=new \\
+  	--initial-cluster-state=new \\
 	--data-dir={{.DataDir}} \\
 	--cert-file={{.PKIDir}}/server.crt \\
 	--key-file={{.PKIDir}}/server.key \\

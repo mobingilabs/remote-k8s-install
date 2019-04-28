@@ -50,12 +50,13 @@ func (m *master) Delete(ctx context.Context, cfg *pb.ServerConfig) (*pb.Response
 	}
 
 	job := machine.NewJob("delete-master")
-	job.AddCmd(cmd.NewSystemStopCmd(constants.KubeApiserverService))
-	job.AddCmd(cmd.NewSystemStopCmd(constants.KubeControllerManagerService))
-	job.AddCmd(cmd.NewSystemStopCmd(constants.KubeSchedulerService))
-	job.AddCmd("rm /etc/systemd/system/kube-apiserver.service")
-	job.AddCmd("rm /etc/systemd/system/kube-controller-manager.service")
-	job.AddCmd("rm /etc/systemd/system/kube-scheduler.service")
+	// stop kubelet
+	job.AddCmd(cmd.NewSystemStopCmd(constants.KubeletService))
+	job.AddCmd("rm /etc/systemd/system/kubelet.service")
+	job.AddCmd("rm -rf /etc/systemd/system/kubelet.service.d")
+	// delete static pod yaml file
+	job.AddCmd("rm -rf /etc/kubelet.d")
+	// delete kubernetes config file
 	job.AddCmd("rm -rf /etc/kubernetes")
 	err = machines.Run(job)
 	if err != nil {

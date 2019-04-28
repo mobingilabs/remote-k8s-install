@@ -6,6 +6,7 @@ import (
 	"mobingi/ocean/pkg/config"
 	preparemaster "mobingi/ocean/pkg/kubernetes/prepare/master"
 	"mobingi/ocean/pkg/kubernetes/service"
+	"mobingi/ocean/pkg/kubernetes/staticpod"
 	"mobingi/ocean/pkg/log"
 	phasesmaster "mobingi/ocean/pkg/phases/master"
 	configstorage "mobingi/ocean/pkg/storage"
@@ -41,7 +42,6 @@ func (c *cluster) Init(ctx context.Context, ccfg *pb.ClusterConfig) (*pb.Respons
 	if err != nil {
 		return nil, err
 	}
-
 	certs, err := storage.AllCerts()
 	if err != nil {
 		return nil, err
@@ -57,6 +57,10 @@ func (c *cluster) Init(ctx context.Context, ccfg *pb.ClusterConfig) (*pb.Respons
 	job := preparemaster.NewJob(cfg.DownloadBinSite, certs, kubeconfs)
 	phasesmaster.InstallDocker(job)
 	job.AddAnother(service.NewRunMasterKubeletJob())
+
+	privateIPs := cfg.GetMasterPrivateIPs()
+	etcdServers := service.GetEtcdServers(privateIPs)
+	job.AddAnother(staticpod.NewMasterStaticPodsJob(privateIPs[0], etcdServers))
 
 	g := group.NewGroup(len(cfg.Masters))
 	for _, v := range machines {

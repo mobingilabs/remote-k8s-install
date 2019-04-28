@@ -128,12 +128,11 @@ func NewRunKubeletJob() *machine.Job {
 	return job
 }
 
-const kubeletStaticPodDir = "/etc/kubelet.d/"
-const masrerKubeletServicedFileContent = `
+const masterKubeletServicedFileContent = `
 [Service]
-Environment="KUBELET_KUBECONFIG_ARGS=--cgroup-driver=systemd --runtime-cgroups=/systemd/system.slice --kubelet-cgroups=/systemd/system.slice --fail-swap-on=false --pod-manifest-path=/etc/kubelet.d/"
+Environment="KUBELET_KUBECONFIG_ARGS=--cgroup-driver=systemd --fail-swap-on=false --pod-manifest-path=/etc/kubelet.d/"
 ExecStart=
-ExecStart=/usr/local/bin/kubelet \$KUBELET_KUBECONFIG_ARGS
+ExecStart=/usr/local/bin/kubelet \$KUBELET_KUBECONFIG_ARGS --pod-infra-container-image=cnbailian/pause:3.1
 `
 
 func NewRunMasterKubeletJob() *machine.Job {
@@ -141,9 +140,9 @@ func NewRunMasterKubeletJob() *machine.Job {
 
 	job.AddCmd(cmdutil.NewMkdirAllCmd(filepath.Join(constants.ServiceDir, kubeletServicedDir)))
 	job.AddCmd(cmdutil.NewMkdirAllCmd(kubeletConfigDir))
-	job.AddCmd(cmdutil.NewMkdirAllCmd(kubeletStaticPodDir))
+	job.AddCmd(cmdutil.NewMkdirAllCmd(constants.KubeletStaticPodDir))
 	job.AddCmd(cmdutil.NewWriteCmd(filepath.Join(constants.ServiceDir, constants.KubeletService), kubeletServiceTemplate))
-	job.AddCmd(cmdutil.NewWriteCmd(filepath.Join(constants.ServiceDir, kubeletServicedDir, kubeletServicedName), masrerKubeletServicedFileContent))
+	job.AddCmd(cmdutil.NewWriteCmd(filepath.Join(constants.ServiceDir, kubeletServicedDir, kubeletServicedName), masterKubeletServicedFileContent))
 	job.AddCmd(cmdutil.NewSystemStartCmd(constants.KubeletService))
 
 	return job
