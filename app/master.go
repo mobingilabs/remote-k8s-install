@@ -52,7 +52,10 @@ func (m *master) Delete(ctx context.Context, cfg *pb.ServerConfig) (*pb.Response
 	job := machine.NewJob("delete-master")
 	// stop kubelet
 	job.AddCmd(cmd.NewSystemStopCmd(constants.KubeletService))
-	job.AddCmd("rm /etc/systemd/system/kubelet.service")
+	job.AddCmd("docker stop `docker ps --no-trunc -aq`")
+	job.AddCmd("docker rm `docker ps --no-trunc -aq`")
+	job.AddCmd(cmd.NewSystemStopCmd("docker"))
+	job.AddCmd("rm -rf /etc/systemd/system/kubelet.service")
 	job.AddCmd("rm -rf /etc/systemd/system/kubelet.service.d")
 	// delete static pod yaml file
 	job.AddCmd("rm -rf /etc/kubelet.d")
