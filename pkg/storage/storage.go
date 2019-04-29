@@ -13,15 +13,15 @@ type Cluster interface {
 }
 
 type Cert interface {
-	CreateCerts() error
-	AllCerts() (map[string][]byte, error)
-	GetCert(name string) ([]byte, error)
+	CreateCerts(cfg *config.Config) error
+	AllCerts(clusterName string) (map[string][]byte, error)
+	GetCert(clusterName, name string) ([]byte, error)
 }
 
 type Kubeconf interface {
-	CreateKubeconfs(caCert []byte, caKey []byte) error
-	AllKubeconfs() (map[string][]byte, error)
-	GetKubeconf(name string) ([]byte, error)
+	CreateKubeconfs(cfg *config.Config, caCert []byte, caKey []byte) error
+	AllKubeconfs(clusterName string) (map[string][]byte, error)
+	GetKubeconf(clusterName, name string) ([]byte, error)
 }
 
 func NewStorage(driver Cluster, cfg *config.Config) (Cluster, error) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"mobingi/ocean/pkg/config"
 	"mobingi/ocean/pkg/constants"
+	"mobingi/ocean/pkg/kubernetes/service"
 	"mobingi/ocean/pkg/log"
 	"mobingi/ocean/pkg/tools/certs"
 	"mobingi/ocean/pkg/tools/kubeconf"
@@ -18,9 +19,7 @@ import (
 	"github.com/mongodb/mongo-go-driver/mongo"
 )
 
-type ClusterMongo struct {
-	cfg *config.Config
-}
+type ClusterMongo struct{}
 
 type certType struct {
 	Cluster string `bson:"cluster"`
@@ -34,9 +33,15 @@ type kubeconfType struct {
 	Conf    []byte `bson:"conf"`
 }
 
+type etcdServersType struct {
+	Cluster string `bson:"cluster"`
+	Servers string `bson:"servers"`
+}
+
 const (
-	certsTableName     = "certs"
-	kubeconfsTableName = "kubeconfs"
+	certsTableName       = "certs"
+	kubeconfsTableName   = "kubeconfs"
+	etcdServersTableName = "etcd_servers"
 )
 
 var db *mongo.Database
@@ -62,34 +67,68 @@ func NewMongoClient() {
 }
 
 func (c *ClusterMongo) Init(cfg *config.Config) error {
-	c.cfg = cfg
-
 	// TODO Alraedy exists validation
-	err := c.CreateCerts()
+	err := c.CreateCerts(cfg)
 	if err != nil {
 		return err
 	}
-
-	caCert, _ := c.GetCert(utilcert.PathForCert(constants.CACertAndKeyBaseName))
-	caKey, _ := c.GetCert(utilcert.PathForKey(constants.CACertAndKeyBaseName))
-
-	err = c.CreateKubeconfs(caCert, caKey)
+	caCert, err := c.GetCert(cfg.ClusterName, utilcert.PathForCert(constants.CACertAndKeyBaseName))
+	if err != nil {
+		return err
+	}
+	caKey, err := c.GetCert(cfg.ClusterName, utilcert.PathForKey(constants.CACertAndKeyBaseName))
+	if err != nil {
+		return err
+	}
+	err = c.CreateKubeconfs(cfg, caCert, caKey)
+	if err != nil {
+		return err
+	}
+	err = c.SetEtcdServers(cfg)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *ClusterMongo) CreateCerts() error {
+func (c *ClusterMongo) SetEtcdServers(cfg *config.Config) error {
+	privateIPs := cfg.GetMasterPrivateIPs()
+	etcdServers := service.GetEtcdServers(privateIPs)
+	// Store etcd servers in the database
+	collection := db.Collection(etcdServersTableName)
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	insertData := etcdServersType{
+		Cluster: cfg.ClusterName,
+		Servers: etcdServers,
+	}
+	_, err := collection.InsertOne(ctx, insertData)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *ClusterMongo) GetEtcdServers(clusterName string) (string, error) {
+	collection := db.Collection(etcdServersTableName)
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	var result etcdServersType
+	err := collection.FindOne(ctx, bson.M{"cluster": clusterName}).Decode(&result)
+	if err != nil {
+		return "", err
+	}
+	return result.Servers, nil
+}
+
+func (c *ClusterMongo) CreateCerts(cfg *config.Config) error {
 	// Get cert
-	sans := c.cfg.GetSANs()
-	certs, err := certs.CreatePKIAssets(c.cfg.AdvertiseAddress, c.cfg.PublicIP, sans)
+	sans := cfg.GetSANs()
+	certs, err := certs.CreatePKIAssets(cfg.AdvertiseAddress, cfg.PublicIP, sans)
 	if err != nil {
 		return err
 	}
 	var insertData []interface{}
 	for name, cert := range certs {
-		insertData = append(insertData, certType{Cluster: c.cfg.ClusterName, Name: name, Cert: cert})
+		insertData = append(insertData, certType{Cluster: cfg.ClusterName, Name: name, Cert: cert})
 	}
 	// Store certs in the database
 	collection := db.Collection(certsTableName)
@@ -101,10 +140,10 @@ func (c *ClusterMongo) CreateCerts() error {
 	return nil
 }
 
-func (c *ClusterMongo) AllCerts() (map[string][]byte, error) {
+func (c *ClusterMongo) AllCerts(clusterName string) (map[string][]byte, error) {
 	collection := db.Collection(certsTableName)
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	cur, err := collection.Find(ctx, bson.M{"cluster": c.cfg.ClusterName})
+	cur, err := collection.Find(ctx, bson.M{"cluster": clusterName})
 	if err != nil {
 		return nil, err
 	}
@@ -123,18 +162,18 @@ func (c *ClusterMongo) AllCerts() (map[string][]byte, error) {
 	return certs, nil
 }
 
-func (c *ClusterMongo) GetCert(name string) ([]byte, error) {
+func (c *ClusterMongo) GetCert(clusterName, name string) ([]byte, error) {
 	collection := db.Collection(certsTableName)
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	var result certType
-	err := collection.FindOne(ctx, bson.M{"cluster": c.cfg.ClusterName, "name": name}).Decode(&result)
+	err := collection.FindOne(ctx, bson.M{"cluster": clusterName, "name": name}).Decode(&result)
 	if err != nil {
 		return nil, err
 	}
 	return result.Cert, nil
 }
 
-func (c *ClusterMongo) CreateKubeconfs(caCert []byte, caKey []byte) error {
+func (c *ClusterMongo) CreateKubeconfs(cfg *config.Config, caCert []byte, caKey []byte) error {
 	cert, err := pkiutil.ParseCertPEM(caCert)
 	if err != nil {
 		return err
@@ -143,13 +182,13 @@ func (c *ClusterMongo) CreateKubeconfs(caCert []byte, caKey []byte) error {
 	if err != nil {
 		return err
 	}
-	kubeconfs, err := kubeconf.CreateKubeconf(c.cfg, cert, key)
+	kubeconfs, err := kubeconf.CreateKubeconf(cfg, cert, key)
 	if err != nil {
 		return err
 	}
 	var insertData []interface{}
 	for name, conf := range kubeconfs {
-		insertData = append(insertData, kubeconfType{Cluster: c.cfg.ClusterName, Name: name, Conf: conf})
+		insertData = append(insertData, kubeconfType{Cluster: cfg.ClusterName, Name: name, Conf: conf})
 	}
 	// Store kubeconfs in the database
 	collection := db.Collection(kubeconfsTableName)
@@ -161,10 +200,10 @@ func (c *ClusterMongo) CreateKubeconfs(caCert []byte, caKey []byte) error {
 	return nil
 }
 
-func (c *ClusterMongo) AllKubeconfs() (map[string][]byte, error) {
+func (c *ClusterMongo) AllKubeconfs(clusterName string) (map[string][]byte, error) {
 	collection := db.Collection(kubeconfsTableName)
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	cur, err := collection.Find(ctx, bson.M{"cluster": c.cfg.ClusterName})
+	cur, err := collection.Find(ctx, bson.M{"cluster": clusterName})
 	if err != nil {
 		return nil, err
 	}
@@ -183,11 +222,11 @@ func (c *ClusterMongo) AllKubeconfs() (map[string][]byte, error) {
 	return kubeconfs, nil
 }
 
-func (c *ClusterMongo) GetKubeconf(name string) ([]byte, error) {
+func (c *ClusterMongo) GetKubeconf(clusterName, name string) ([]byte, error) {
 	collection := db.Collection(kubeconfsTableName)
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	var result kubeconfType
-	err := collection.FindOne(ctx, bson.M{"cluster": c.cfg.ClusterName, "name": name}).Decode(&result)
+	err := collection.FindOne(ctx, bson.M{"cluster": clusterName, "name": name}).Decode(&result)
 	if err != nil {
 		return nil, err
 	}
