@@ -12,7 +12,14 @@ import (
 
 type cluster struct{}
 
-// TODO cluster name write to database, stop if exist
+/**
+TODO:
+	cluster name write to database, stop if exist
+	remove master and node wait for optimize
+	kubelet wait for optimize
+	how to download kubelet
+	yum install config use aliconfig
+*/
 func (c *cluster) Init(ctx context.Context, clusterCfg *pb.ClusterConfig) (*pb.Response, error) {
 	// Get cluster config
 	cfg, err := config.LoadConfigFromGrpc(clusterCfg)
