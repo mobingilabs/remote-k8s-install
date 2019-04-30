@@ -21,6 +21,7 @@ func Start() error {
 
 	pb.RegisterMasterServer(s, &master{})
 	pb.RegisterClusterServer(s, &cluster{})
+	pb.RegisterNodeServer(s, &node{})
 	if err := s.Serve(lis); err != nil {
 		log.Errorf("failed to serve: %v", err)
 	}

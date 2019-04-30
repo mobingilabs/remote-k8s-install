@@ -10,6 +10,8 @@ type Cluster interface {
 	Init(cfg *config.Config) error
 	Cert
 	Kubeconf
+	EtcdServer
+	Bootatrap
 }
 
 type Cert interface {
@@ -24,7 +26,19 @@ type Kubeconf interface {
 	GetKubeconf(clusterName, name string) ([]byte, error)
 }
 
+type EtcdServer interface {
+	SetEtcdServers(cfg *config.Config) error
+	GetEtcdServers(clusterName string) (string, error)
+}
+
+type Bootatrap interface {
+	SetBootstrapConf(clusterName string) error
+}
+
 func NewStorage(driver Cluster, cfg *config.Config) (Cluster, error) {
-	driver.Init(cfg)
+	err := driver.Init(cfg)
+	if err != nil {
+		return nil, err
+	}
 	return driver, nil
 }

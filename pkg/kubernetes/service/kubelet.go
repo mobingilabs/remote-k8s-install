@@ -25,7 +25,7 @@ const kubeletServicedDir = "kubelet.service.d"
 const kubeletServicedName = "10-ocean.conf"
 const kubeletServicedFileContent = `
 [Service]
-Environment="KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/admin.conf --kubeconfig=/etc/kubernetes/kubelet.conf --pod-manifest-path=/etc/kubelet.d/"
+Environment="KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf --pod-manifest-path=/etc/kubelet.d/"
 Environment="KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml"
 EnvironmentFile=-/var/lib/kubelet/ocean-flags.env
 EnvironmentFile=-/etc/sysconfig/kubelet

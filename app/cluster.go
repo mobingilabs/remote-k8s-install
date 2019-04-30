@@ -6,6 +6,8 @@ import (
 	"mobingi/ocean/pkg/config"
 	"mobingi/ocean/pkg/log"
 	"mobingi/ocean/pkg/phases"
+	"mobingi/ocean/pkg/storage"
+	"time"
 )
 
 type cluster struct{}
@@ -17,8 +19,11 @@ func (c *cluster) Init(ctx context.Context, clusterCfg *pb.ClusterConfig) (*pb.R
 	if err != nil {
 		return nil, err
 	}
+	// TODO remove all documents
+	drop := storage.ClusterMongo{}
+	drop.RemoveAllDocuments()
 	// Create certs and kubeconfs
-	err = phases.Init(cfg)
+	storage, err := phases.Init(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -39,6 +44,13 @@ func (c *cluster) Init(ctx context.Context, clusterCfg *pb.ClusterConfig) (*pb.R
 		}
 	}
 	log.Info("Cluster initialized")
+	// Store bootstrap conf in the database
+	// TODO waiting for apiserver to start
+	time.Sleep(10 * time.Second)
+	err = storage.SetBootstrapConf(cfg.ClusterName)
+	if err != nil {
+		return nil, err
+	}
 
 	return &pb.Response{Message: ""}, nil
 }

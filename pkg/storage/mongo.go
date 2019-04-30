@@ -4,6 +4,7 @@ import (
 	"context"
 	"mobingi/ocean/pkg/config"
 	"mobingi/ocean/pkg/constants"
+	"mobingi/ocean/pkg/kubernetes/bootstrap"
 	"mobingi/ocean/pkg/kubernetes/service"
 	"mobingi/ocean/pkg/log"
 	"mobingi/ocean/pkg/tools/certs"
@@ -231,4 +232,36 @@ func (c *ClusterMongo) GetKubeconf(clusterName, name string) ([]byte, error) {
 		return nil, err
 	}
 	return result.Conf, nil
+}
+
+func (c *ClusterMongo) SetBootstrapConf(clusterName string) error {
+	adminConf, err := c.GetKubeconf(clusterName, "admin.conf")
+	bootstrapConf, err := bootstrap.Bootstrap(adminConf)
+	if err != nil {
+		return err
+	}
+	insertData := kubeconfType{Cluster: clusterName, Name: "bootstrap.conf", Conf: bootstrapConf}
+	// Store kubeconfs in the database
+	collection := db.Collection(kubeconfsTableName)
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	_, err = collection.InsertOne(ctx, insertData)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *ClusterMongo) RemoveAllDocuments() error {
+	kubeconf := db.Collection(kubeconfsTableName)
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	err := kubeconf.Drop(ctx)
+	if err != nil {
+		return err
+	}
+	collection := db.Collection(certsTableName)
+	err = collection.Drop(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
 }
