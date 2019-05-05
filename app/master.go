@@ -12,7 +12,7 @@ import (
 type master struct{}
 
 func (m *master) Join(ctx context.Context, cfg *pb.ServerConfig) (*pb.Response, error) {
-	storage := storage.ClusterMongo{}
+	storage := storage.NewStorage()
 	certs, err := storage.AllCerts(cfg.ClusterName)
 	if err != nil {
 		return nil, err

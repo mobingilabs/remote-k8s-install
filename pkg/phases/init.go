@@ -6,7 +6,8 @@ import (
 )
 
 func Init(cfg *config.Config) (configstorage.Cluster, error) {
-	storage, err := configstorage.NewStorage(&configstorage.ClusterMongo{}, cfg)
+	storage := configstorage.NewStorage()
+	err := storage.Init(cfg)
 	if err != nil {
 		return nil, err
 	}

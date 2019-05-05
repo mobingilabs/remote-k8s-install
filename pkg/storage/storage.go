@@ -8,6 +8,7 @@ type Database interface {
 
 type Cluster interface {
 	Init(cfg *config.Config) error
+	Exist(name string) (bool, error)
 	Cert
 	Kubeconf
 	EtcdServer
@@ -35,10 +36,7 @@ type Bootatrap interface {
 	SetBootstrapConf(clusterName string) error
 }
 
-func NewStorage(driver Cluster, cfg *config.Config) (Cluster, error) {
-	err := driver.Init(cfg)
-	if err != nil {
-		return nil, err
-	}
-	return driver, nil
+func NewStorage() Cluster {
+	driver := &ClusterMongo{}
+	return driver
 }

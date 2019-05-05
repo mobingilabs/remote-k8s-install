@@ -39,7 +39,12 @@ type etcdServersType struct {
 	Servers string `bson:"servers"`
 }
 
+type clusterType struct {
+	Name string `bson:"name"`
+}
+
 const (
+	clusterTableName     = "clusters"
 	certsTableName       = "certs"
 	kubeconfsTableName   = "kubeconfs"
 	etcdServersTableName = "etcd_servers"
@@ -86,6 +91,38 @@ func (c *ClusterMongo) Init(cfg *config.Config) error {
 		return err
 	}
 	err = c.SetEtcdServers(cfg)
+	if err != nil {
+		return err
+	}
+	err = c.setCluster(cfg)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *ClusterMongo) Exist(name string) (bool, error) {
+	collection := db.Collection(clusterTableName)
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	var result bson.M
+	err := collection.FindOne(ctx, bson.M{"name": name}).Decode(&result)
+	if err == mongo.ErrNoDocuments {
+		return false, nil
+	}
+	if err != nil {
+		return true, err
+	}
+	return true, nil
+}
+
+func (c *ClusterMongo) setCluster(cfg *config.Config) error {
+	// Store etcd servers in the database
+	collection := db.Collection(clusterTableName)
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	insertData := clusterType{
+		Name: cfg.ClusterName,
+	}
+	_, err := collection.InsertOne(ctx, insertData)
 	if err != nil {
 		return err
 	}

@@ -2,11 +2,12 @@ package app
 
 import (
 	"context"
+	"fmt"
 	pb "mobingi/ocean/app/proto"
 	"mobingi/ocean/pkg/config"
 	"mobingi/ocean/pkg/log"
 	"mobingi/ocean/pkg/phases"
-	"mobingi/ocean/pkg/storage"
+	configstorage "mobingi/ocean/pkg/storage"
 	"time"
 )
 
@@ -14,11 +15,15 @@ type cluster struct{}
 
 /**
 TODO:
-	cluster name write to database, stop if exist
+	cluster delete api
 	remove master and node wait for optimize
 	kubelet wait for optimize
 	how to download kubelet
 	yum install config use aliconfig
+
+	monitor cluster status
+	buy instance
+	负载均衡api
 */
 func (c *cluster) Init(ctx context.Context, clusterCfg *pb.ClusterConfig) (*pb.Response, error) {
 	// Get cluster config
@@ -26,11 +31,17 @@ func (c *cluster) Init(ctx context.Context, clusterCfg *pb.ClusterConfig) (*pb.R
 	if err != nil {
 		return nil, err
 	}
-	// TODO remove all documents
-	drop := storage.ClusterMongo{}
-	drop.RemoveAllDocuments()
+	// Cluster exist validate
+	storage := configstorage.NewStorage()
+	exist, err := storage.Exist(cfg.ClusterName)
+	if err != nil {
+		return nil, err
+	}
+	if exist {
+		return nil, fmt.Errorf("Cluster: %s already exists", cfg.ClusterName)
+	}
 	// Create certs and kubeconfs
-	storage, err := phases.Init(cfg)
+	_, err = phases.Init(cfg)
 	if err != nil {
 		return nil, err
 	}

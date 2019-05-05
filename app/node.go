@@ -20,7 +20,7 @@ func (n *node) Join(ctx context.Context, cfg *pb.ServerConfig) (*pb.Response, er
 	defer machine.Close()
 	log.Info("machine init")
 
-	storage := storage.ClusterMongo{}
+	storage := storage.NewStorage()
 	bootstrapconf, err := storage.GetKubeconf(cfg.ClusterName, "bootstrap.conf")
 	if err != nil {
 		return nil, err
