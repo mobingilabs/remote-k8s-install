@@ -47,15 +47,6 @@ spec:
     - --etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key
     - --allow-privileged=true
     image: cnbailian/kube-apiserver:v1.13.3
-    livenessProbe:
-      failureThreshold: 8
-      httpGet:
-        host: HOST_IP
-        path: /healthz
-        port: 6443
-        scheme: HTTPS
-      initialDelaySeconds: 15
-      timeoutSeconds: 15
     name: kube-apiserver
     resources:
       requests:

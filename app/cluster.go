@@ -15,7 +15,7 @@ type cluster struct{}
 
 /**
 TODO:
-	cluster delete api
+	bootstrap config was created by node
 	remove master and node wait for optimize
 	kubelet wait for optimize
 	how to download kubelet
@@ -64,7 +64,7 @@ func (c *cluster) Init(ctx context.Context, clusterCfg *pb.ClusterConfig) (*pb.R
 	log.Info("Cluster initialized")
 	// Store bootstrap conf in the database
 	// TODO waiting for apiserver to start
-	time.Sleep(10 * time.Second)
+	time.Sleep(120 * time.Second)
 	err = storage.SetBootstrapConf(cfg.ClusterName)
 	if err != nil {
 		return nil, err
