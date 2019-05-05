@@ -72,3 +72,23 @@ func (c *cluster) Init(ctx context.Context, clusterCfg *pb.ClusterConfig) (*pb.R
 
 	return &pb.Response{Message: ""}, nil
 }
+
+func (c *cluster) Delete(ctx context.Context, clusterCfg *pb.ClusterConfig) (*pb.Response, error) {
+	// Get cluster config
+	cfg, err := config.LoadConfigFromGrpc(clusterCfg)
+	if err != nil {
+		return nil, err
+	}
+	// Delete cluster storage
+	storage := configstorage.NewStorage()
+	storage.Drop(cfg)
+	// Delete masters
+	master := master{}
+	for _, v := range clusterCfg.Masters {
+		_, err = master.Delete(context.Background(), v)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &pb.Response{Message: ""}, nil
+}

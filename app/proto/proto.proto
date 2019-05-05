@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package proto;
+
+message Response {
+  string code = 1;
+  string message = 2;
+}
+
+message ServerConfig {
+  string publicIP = 1;
+  string privateIP = 2;
+  string user = 3;
+  string password = 4;
+  string clusterName = 5;
+}
+
+// Cluster
+service cluster {
+  rpc Init (ClusterConfig) returns (Response) {}
+  rpc Delete (ClusterConfig) returns (Response) {}
+}
+
+message ClusterConfig {
+  string clusterName = 1;
+  string advertiseAddress = 2;
+  string publicIP = 3;
+  string downloadBinSite = 4;
+  repeated ServerConfig masters = 5;
+}
+
+// Master
+service Master {
+  rpc Join (ServerConfig) returns (Response) {}
+  rpc Delete (ServerConfig) returns (Response) {}
+}
+
+// Node
+service Node {
+  rpc Join (ServerConfig) returns (Response) {}
+  rpc Delete (ServerConfig) returns (Response) {}
+}

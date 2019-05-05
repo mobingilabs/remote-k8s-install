@@ -115,6 +115,31 @@ func (c *ClusterMongo) Exist(name string) (bool, error) {
 	return true, nil
 }
 
+func (c *ClusterMongo) Drop(cfg *config.Config) error {
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	kubeconf := db.Collection(kubeconfsTableName)
+	err := kubeconf.Drop(ctx)
+	if err != nil {
+		return err
+	}
+	certs := db.Collection(certsTableName)
+	err = certs.Drop(ctx)
+	if err != nil {
+		return err
+	}
+	etcd := db.Collection(etcdServersTableName)
+	err = etcd.Drop(ctx)
+	if err != nil {
+		return err
+	}
+	cluster := db.Collection(clusterTableName)
+	err = cluster.Drop(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c *ClusterMongo) setCluster(cfg *config.Config) error {
 	// Store etcd servers in the database
 	collection := db.Collection(clusterTableName)
@@ -282,21 +307,6 @@ func (c *ClusterMongo) SetBootstrapConf(clusterName string) error {
 	collection := db.Collection(kubeconfsTableName)
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	_, err = collection.InsertOne(ctx, insertData)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *ClusterMongo) RemoveAllDocuments() error {
-	kubeconf := db.Collection(kubeconfsTableName)
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	err := kubeconf.Drop(ctx)
-	if err != nil {
-		return err
-	}
-	collection := db.Collection(certsTableName)
-	err = collection.Drop(ctx)
 	if err != nil {
 		return err
 	}
