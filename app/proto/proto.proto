@@ -35,8 +35,20 @@ service Master {
   rpc Delete (ServerConfig) returns (Response) {}
 }
 
+message InstanceNode {
+  string instanceID = 1;
+  string instanceService = 2;
+  ServerConfig node = 3;
+}
+
+message InstanceNodes {
+  string clusterName = 1;
+  repeated InstanceNode nodes = 2;
+}
+
 // Node
 service Node {
-  rpc Join (ServerConfig) returns (Response) {}
-  rpc Delete (ServerConfig) returns (Response) {}
+  rpc Join (InstanceNode) returns (Response) {}
+  rpc Delete (InstanceNode) returns (Response) {}
+  rpc ValidateInstances (InstanceNodes) returns (Response) {}
 }

@@ -20,7 +20,7 @@ func main() {
 	// }
 
 	// nodes, err := client.GetNode()
-	// fmt.Println(nodes.Items[0])
+	// fmt.Println(nodes.Items)
 	if err := app.Start(); err != nil {
 		panic(err)
 	}

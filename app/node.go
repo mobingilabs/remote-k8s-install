@@ -12,8 +12,8 @@ import (
 
 type node struct{}
 
-func (n *node) Join(ctx context.Context, cfg *pb.ServerConfig) (*pb.Response, error) {
-	machine, err := machine.NewMachine(cfg.PublicIP, cfg.User, cfg.Password)
+func (n *node) Join(ctx context.Context, cfg *pb.InstanceNode) (*pb.Response, error) {
+	machine, err := machine.NewMachine(cfg.Node.PublicIP, cfg.Node.User, cfg.Node.Password)
 	if err != nil {
 		return nil, err
 	}
@@ -21,11 +21,11 @@ func (n *node) Join(ctx context.Context, cfg *pb.ServerConfig) (*pb.Response, er
 	log.Info("machine init")
 
 	storage := storage.NewStorage()
-	bootstrapconf, err := storage.GetKubeconf(cfg.ClusterName, "bootstrap.conf")
+	bootstrapconf, err := storage.GetKubeconf(cfg.Node.ClusterName, "bootstrap.conf")
 	if err != nil {
 		return nil, err
 	}
-	certs, err := storage.AllCerts(cfg.ClusterName)
+	certs, err := storage.AllCerts(cfg.Node.ClusterName)
 	if err != nil {
 		return nil, err
 	}
@@ -35,15 +35,15 @@ func (n *node) Join(ctx context.Context, cfg *pb.ServerConfig) (*pb.Response, er
 	}
 	log.Info("prepare done")
 
-	if err := machine.Run(service.NewRunKubeletJob()); err != nil {
+	if err := machine.Run(service.NewRunKubeletJob(cfg.InstanceID)); err != nil {
 		return nil, err
 	}
 	log.Info("kubelet run")
 	return &pb.Response{Message: ""}, nil
 }
 
-func (n *node) Delete(ctx context.Context, cfg *pb.ServerConfig) (*pb.Response, error) {
-	machines, err := machine.NewMachine(cfg.PublicIP, cfg.User, cfg.Password)
+func (n *node) Delete(ctx context.Context, cfg *pb.InstanceNode) (*pb.Response, error) {
+	machines, err := machine.NewMachine(cfg.Node.PublicIP, cfg.Node.User, cfg.Node.Password)
 	if err != nil {
 		return nil, err
 	}
@@ -52,5 +52,9 @@ func (n *node) Delete(ctx context.Context, cfg *pb.ServerConfig) (*pb.Response, 
 	if err != nil {
 		return nil, err
 	}
+	return &pb.Response{Message: ""}, nil
+}
+
+func (n *node) ValidateInstances(ctx context.Context, instances *pb.InstanceNodes) (*pb.Response, error) {
 	return &pb.Response{Message: ""}, nil
 }
