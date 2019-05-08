@@ -12,3 +12,11 @@ func GetNode() (*v1.NodeList, error) {
 	}
 	return nodes, nil
 }
+
+func DeleteNode(name string) error {
+	err := client.CoreV1().Nodes().Delete(name, &metav1.DeleteOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
+}

@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	pb "mobingi/ocean/app/proto"
+	"mobingi/ocean/pkg/kubernetes/client"
 	"mobingi/ocean/pkg/storage"
 )
 
@@ -37,5 +38,21 @@ func (n *node) Join(ctx context.Context, cfg *pb.InstanceNode) (*pb.NodeConfs, e
 }
 
 func (n *node) Delete(ctx context.Context, cfg *pb.InstanceNode) (*pb.Response, error) {
+
+	storage := storage.NewStorage()
+	kubeconfig, err := storage.GetKubeconf("kubernetes", "admin.conf")
+	if err != nil {
+		return nil, err
+	}
+	err = client.Init(kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	err = client.DeleteNode(cfg.InstanceID)
+	if err != nil {
+		return nil, err
+	}
+
 	return &pb.Response{Message: ""}, nil
 }
