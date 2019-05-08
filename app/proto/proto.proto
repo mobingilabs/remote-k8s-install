@@ -37,18 +37,22 @@ service Master {
 
 message InstanceNode {
   string instanceID = 1;
-  string instanceService = 2;
-  ServerConfig node = 3;
+  string instanceName = 2;
+  string instanceService = 3;
 }
 
-message InstanceNodes {
-  string clusterName = 1;
-  repeated InstanceNode nodes = 2;
+message NodeConfs {
+  bytes bootstrapConf = 1;
+  repeated Cert certs = 2;
+}
+
+message Cert {
+  string name = 1;
+  bytes cert = 2;
 }
 
 // Node
 service Node {
-  rpc Join (InstanceNode) returns (Response) {}
+  rpc Join (InstanceNode) returns (NodeConfs) {}
   rpc Delete (InstanceNode) returns (Response) {}
-  rpc ValidateInstances (InstanceNodes) returns (Response) {}
 }
