@@ -38,18 +38,14 @@ func (n *node) Join(ctx context.Context, cfg *pb.InstanceNode) (*pb.NodeConfs, e
 }
 
 func (n *node) Delete(ctx context.Context, cfg *pb.InstanceNode) (*pb.Response, error) {
-
-	storage := storage.NewStorage()
-	kubeconfig, err := storage.GetKubeconf("kubernetes", "admin.conf")
+	clientset, err := client.NewClient("kubernetes")
 	if err != nil {
 		return nil, err
 	}
-	err = client.Init(kubeconfig)
-	if err != nil {
-		return nil, err
+	var node = &client.Node{
+		Client: clientset,
 	}
-
-	err = client.DeleteNode(cfg.InstanceID)
+	err = node.DeleteNode(cfg.InstanceID)
 	if err != nil {
 		return nil, err
 	}
