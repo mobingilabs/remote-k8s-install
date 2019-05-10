@@ -60,6 +60,7 @@ func (c *cluster) Init(ctx context.Context, clusterCfg *pb.ClusterConfig) (*pb.R
 		return nil, err
 	}
 
+	log.Info("Create node instance")
 	insClient := &tencent.InstanceTencent{}
 	res, err := insClient.CreateInstance(clusterCfg.NodeNumber)
 	if err != nil {
@@ -67,6 +68,11 @@ func (c *cluster) Init(ctx context.Context, clusterCfg *pb.ClusterConfig) (*pb.R
 	}
 	for _, id := range res.Response.InstanceIdSet {
 		client.Nodes[*id] = cfg.ClusterName
+	}
+
+	err = client.ClustersMonitor()
+	if err != nil {
+		return nil, err
 	}
 
 	return &pb.Response{Message: ""}, nil
