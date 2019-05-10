@@ -27,6 +27,7 @@ message ClusterConfig {
   string publicIP = 3;
   string downloadBinSite = 4;
   repeated ServerConfig masters = 5;
+  int64 nodeNumber = 6;
 }
 
 // Master

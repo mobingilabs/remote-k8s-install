@@ -20,7 +20,7 @@ const (
 	EnvName      = "kubernetes"
 	InstanceName = "kubernetes-node"
 	ClientToken  = "create-compute-env"
-	ImageName    = "img-9ltid5od"
+	ImageName    = "img-lggrctuj"
 )
 
 var credential *common.Credential
