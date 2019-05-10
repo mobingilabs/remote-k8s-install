@@ -10,6 +10,7 @@ type Cluster interface {
 	Init(cfg *config.Config) error
 	Exist(name string) (bool, error)
 	Drop(cfg *config.Config) error
+	All() ([]string, error)
 	Cert
 	Kubeconf
 	EtcdServer

@@ -11,8 +11,23 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+var Nodes = make(map[string]string)
+
 type Node struct {
-	Client *kubernetes.Clientset
+	Client      *kubernetes.Clientset
+	ClusterName string
+}
+
+func NewNodeClient(clusterName string) (*Node, error) {
+	clientset, err := NewClient(clusterName)
+	if err != nil {
+		return nil, err
+	}
+	node := &Node{
+		Client:      clientset,
+		ClusterName: clusterName,
+	}
+	return node, nil
 }
 
 func (n *Node) GetNode() (*v1.NodeList, error) {
@@ -58,7 +73,6 @@ func (n *Node) NewUnhealthyNodeTimer() {
 	go func() {
 		for _ = range ticker.C {
 			num, err := n.GetUnhealthyNodeNum()
-			log.Info(num)
 			if err != nil {
 				log.Error(err)
 			}
@@ -66,12 +80,13 @@ func (n *Node) NewUnhealthyNodeTimer() {
 				// 小于两分钟
 				if lastTime.After(time.Now().Add(-timeoutTime)) {
 					if num > lastNum {
-						// TODO 将实例id 对应集群
 						res, err := client.CreateInstance(num - lastNum)
 						if err != nil {
 							log.Error(err)
 						} else {
-							log.Info(res)
+							for _, id := range res.Response.InstanceIdSet {
+								Nodes[*id] = n.ClusterName
+							}
 							lastNum = num
 							lastTime = time.Now()
 						}
@@ -81,7 +96,9 @@ func (n *Node) NewUnhealthyNodeTimer() {
 					if err != nil {
 						log.Error(err)
 					} else {
-						log.Info(res)
+						for _, id := range res.Response.InstanceIdSet {
+							Nodes[*id] = n.ClusterName
+						}
 						lastNum = num
 						lastTime = time.Now()
 					}
@@ -89,5 +106,4 @@ func (n *Node) NewUnhealthyNodeTimer() {
 			}
 		}
 	}()
-
 }

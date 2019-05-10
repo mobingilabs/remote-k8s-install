@@ -140,6 +140,28 @@ func (c *ClusterMongo) Drop(cfg *config.Config) error {
 	return nil
 }
 
+func (c *ClusterMongo) All() ([]string, error) {
+	collection := db.Collection(clusterTableName)
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	cur, err := collection.Find(ctx, bson.M{})
+	if err != nil {
+		return nil, err
+	}
+	var clusters []string
+	for cur.Next(ctx) {
+		var result clusterType
+		err := cur.Decode(&result)
+		if err != nil {
+			return nil, err
+		}
+		clusters = append(clusters, result.Name)
+	}
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
+	return clusters, nil
+}
+
 func (c *ClusterMongo) setCluster(cfg *config.Config) error {
 	// Store etcd servers in the database
 	collection := db.Collection(clusterTableName)

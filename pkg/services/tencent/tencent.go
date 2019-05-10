@@ -3,8 +3,6 @@ package tencent
 import (
 	"fmt"
 	"os"
-	"strconv"
-	"sync"
 	"time"
 
 	cvm "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cvm/v20170312"
@@ -23,11 +21,6 @@ const (
 	InstanceName = "kubernetes-node"
 	ClientToken  = "create-compute-env"
 	ImageName    = "img-9ltid5od"
-)
-
-var (
-	instanceMu sync.Mutex
-	instanceID = 1
 )
 
 var credential *common.Credential
@@ -151,15 +144,11 @@ func (c *InstanceTencent) CreateSpotInstance(number int64) (*cvm.RunInstancesRes
 			SpotInstanceType: common.StringPtr("one-time"),
 		},
 	}
-	instanceMu.Lock()
-	defer instanceMu.Unlock()
-	request.HostName = common.StringPtr(getInstanceHostName())
 
 	res, err := client.RunInstances(request)
 	if err != nil {
 		return nil, err
 	}
-	instanceID++
 	return res, nil
 }
 
@@ -189,15 +178,10 @@ func (c *InstanceTencent) CreateCommonInstance(number int64) (*cvm.RunInstancesR
 	}
 	request.ClientToken = common.StringPtr(time.Now().String())
 
-	instanceMu.Lock()
-	defer instanceMu.Unlock()
-	request.HostName = common.StringPtr(getInstanceHostName())
-
 	res, err := client.RunInstances(request)
 	if err != nil {
 		return nil, err
 	}
-	instanceID++
 	return res, nil
 }
 
@@ -212,8 +196,4 @@ func (c *InstanceTencent) CreateInstance(number int64) (*cvm.RunInstancesRespons
 		}
 	}
 	return res, nil
-}
-
-func getInstanceHostName() string {
-	return "k8s-node-" + strconv.Itoa(instanceID)
 }

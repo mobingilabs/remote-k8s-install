@@ -3,6 +3,7 @@ package main
 import (
 	"mobingi/ocean/app"
 	"mobingi/ocean/pkg/kubernetes/client"
+	"mobingi/ocean/pkg/log"
 	"mobingi/ocean/pkg/storage"
 )
 
@@ -10,14 +11,16 @@ func main() {
 	// TODO Move to main init func
 	storage.NewMongoClient()
 
-	clientset, err := client.NewClient("kubernetes")
+	err := client.InitClustersAndNodes()
 	if err != nil {
-		panic(err)
+		log.Error(err)
+		return
 	}
-	var node = &client.Node{
-		Client: clientset,
+	err = client.ClustersMonitor()
+	if err != nil {
+		log.Error(err)
+		return
 	}
-	node.NewUnhealthyNodeTimer()
 
 	// tencent.Init()
 	// client := &tencent.InstanceTencent{}

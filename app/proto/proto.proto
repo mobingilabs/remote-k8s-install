@@ -55,4 +55,5 @@ message Cert {
 service Node {
   rpc Join (InstanceNode) returns (NodeConfs) {}
   rpc Delete (InstanceNode) returns (Response) {}
+  rpc SpotInstanceDestroy (InstanceNode) returns (Response) {}
 }
