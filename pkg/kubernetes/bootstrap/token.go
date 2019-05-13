@@ -1,8 +1,8 @@
 package bootstrap
 
 import (
-	"mobingi/ocean/pkg/constants"
 	"fmt"
+	"mobingi/ocean/pkg/constants"
 	"strings"
 	"time"
 
@@ -46,11 +46,10 @@ func NewBootstrapToken() (*BootstrapToken, error) {
 	bootstrapTokenString, err := NewBootstrapTokenString(tokenString)
 	if err != nil {
 		return nil, err
-
 	}
 
 	return &BootstrapToken{
-		Token: bootstrapTokenString,
+		Token:  bootstrapTokenString,
 		Usages: []string{"authentication", "signing"},
 		Groups: []string{constants.NodeBootstrapTokenAuthGroup},
 	}, nil

@@ -1,8 +1,6 @@
 package bootstrap
 
 import (
-	"fmt"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -24,7 +22,7 @@ func Bootstrap(adminconf []byte) ([]byte, error) {
 
 	secret := bt.ToSecret()
 	if _, err := client.CoreV1().Secrets(metav1.NamespaceSystem).Create(secret); err != nil {
-		return nil, fmt.Errorf("can not create secret:%s", err)
+		return nil, err
 	}
 
 	serverURL, err := getAPIServerURL(adminconf)

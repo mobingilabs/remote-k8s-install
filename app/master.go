@@ -2,70 +2,50 @@ package app
 
 import (
 	"context"
-	"fmt"
-	pb "mobingi/ocean/app/proto/master"
-	"mobingi/ocean/pkg/constants"
-	preparemaster "mobingi/ocean/pkg/kubernetes/prepare/master"
-	"mobingi/ocean/pkg/kubernetes/service"
-	phasesmaster "mobingi/ocean/pkg/phases/master"
+	pb "mobingi/ocean/app/proto"
+	"mobingi/ocean/pkg/kubernetes/staticpod"
+	"mobingi/ocean/pkg/phases"
+	"mobingi/ocean/pkg/storage"
 	"mobingi/ocean/pkg/tools/machine"
-	"mobingi/ocean/pkg/util/cmd"
 )
 
 type master struct{}
 
-func (m *master) Join(ctx context.Context, cfg *pb.MasterConfig) (*pb.Response, error) {
-	job := preparemaster.NewOneJob(phasesmaster.Kubeconfs)
+func (m *master) Join(ctx context.Context, cfg *pb.ServerConfig) (*pb.Response, error) {
+	storage := storage.NewStorage()
+	certs, err := storage.AllCerts(cfg.ClusterName)
+	if err != nil {
+		return nil, err
+	}
+	kubeconfs, err := storage.AllKubeconfs(cfg.ClusterName)
+	if err != nil {
+		return nil, err
+	}
+
 	machine, err := machine.NewMachine(cfg.PublicIP, cfg.User, cfg.Password)
 	if err != nil {
 		return nil, err
 	}
-
-	apiserverJob, err := service.NewOneRunAPIServerJob(cfg.PrivateIP, phasesmaster.EtcdServers, phasesmaster.MasterCommonConfig.AdvertiseAddress)
-	if err != nil {
-		return nil, err
-	}
-	controllerManagerJob, err := service.NewRunControllerManagerJob()
-	if err != nil {
-		return nil, err
-	}
-	schedulerJob, err := service.NewRunSchedulerJob()
-	if err != nil {
-		return nil, err
-	}
-	job.AddAnother(apiserverJob)
-	job.AddAnother(controllerManagerJob)
-	job.AddAnother(schedulerJob)
-
+	job := phases.MasterPrepareJob(certs, kubeconfs)
+	etcdServers, err := storage.GetEtcdServers(cfg.ClusterName)
+	job.AddAnother(staticpod.NewMasterStaticPodsJob(cfg.PrivateIP, etcdServers))
 	err = machine.Run(job)
 	if err != nil {
-		fmt.Print(err.Error())
 		return nil, err
 	}
 
-	return &pb.Response{State: "success", Message: ""}, nil
+	return &pb.Response{Message: ""}, nil
 }
 
-func (m *master) Delete(ctx context.Context, cfg *pb.MasterConfig) (*pb.Response, error) {
+func (m *master) Delete(ctx context.Context, cfg *pb.ServerConfig) (*pb.Response, error) {
 	machines, err := machine.NewMachine(cfg.PublicIP, cfg.User, cfg.Password)
 	if err != nil {
 		return nil, err
 	}
-
-	job := machine.NewJob("delete-master")
-	// job.AddCmd(cmd.NewSystemStopCmd(constants.EtcdService))
-	job.AddCmd(cmd.NewSystemStopCmd(constants.KubeApiserverService))
-	job.AddCmd(cmd.NewSystemStopCmd(constants.KubeControllerManagerService))
-	job.AddCmd(cmd.NewSystemStopCmd(constants.KubeSchedulerService))
-	// job.AddCmd("rm /etc/systemd/system/etcd.service")
-	job.AddCmd("rm /etc/systemd/system/kube-apiserver.service")
-	job.AddCmd("rm /etc/systemd/system/kube-controller-manager.service")
-	job.AddCmd("rm /etc/systemd/system/kube-scheduler.service")
-	job.AddCmd("rm -rf /etc/kubernetes")
-	// job.AddCmd("rm -rf /var/lib/etcd")
+	job := phases.MasterRemoveJob()
 	err = machines.Run(job)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.Response{State: "success", Message: ""}, nil
+	return &pb.Response{Message: ""}, nil
 }

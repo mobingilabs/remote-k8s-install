@@ -1,9 +1,7 @@
 package config
 
 import (
-	"io/ioutil"
-
-	"gopkg.in/yaml.v2"
+	"mobingi/ocean/app/proto"
 )
 
 type Config struct {
@@ -42,17 +40,23 @@ type Machine struct {
 	Password  string
 }
 
-func LoadConfigFromFile(name string) (*Config, error) {
-	confByte, err := ioutil.ReadFile(name)
-	if err != nil {
-		return nil, err
+func LoadConfigFromGrpc(clusterCfg *proto.ClusterConfig) (*Config, error) {
+	var masters []Machine
+	for _, v := range clusterCfg.Masters {
+		machine := Machine{
+			PublicIP:  v.PublicIP,
+			PrivateIP: v.PrivateIP,
+			User:      v.User,
+			Password:  v.Password,
+		}
+		masters = append(masters, machine)
 	}
-
-	conf := &Config{}
-
-	if err := yaml.Unmarshal(confByte, conf); err != nil {
-		return nil, err
+	cfg := &Config{
+		ClusterName:      clusterCfg.ClusterName,
+		AdvertiseAddress: clusterCfg.AdvertiseAddress,
+		DownloadBinSite:  clusterCfg.DownloadBinSite,
+		PublicIP:         clusterCfg.PublicIP,
+		Masters:          []Machine(masters),
 	}
-
-	return conf, nil
+	return cfg, nil
 }
