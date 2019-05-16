@@ -2,6 +2,7 @@ package tencent
 
 import (
 	"fmt"
+	"mobingi/ocean/pkg/kubernetes/client/nodes"
 	"os"
 	"time"
 
@@ -189,11 +190,41 @@ func (c *InstanceTencent) CreateInstance(number int64) (*cvm.RunInstancesRespons
 	// 是否分批次创建更好
 	res, err := c.CreateSpotInstance(number)
 	if err != nil {
-		// TODO 普通实例应自动替换为spot实例
 		res, err = c.CreateCommonInstance(number)
 		if err != nil {
 			return nil, err
 		}
+		c.CommonInstanceReplacedBySpotInstance(res)
 	}
 	return res, nil
+}
+
+func (c *InstanceTencent) CommonInstanceReplacedBySpotInstance(instances *cvm.RunInstancesResponse) {
+	ticker := time.NewTicker(time.Second * 10)
+	go func() {
+		for _ = range ticker.C {
+			res, err := c.CreateSpotInstance(int64(len(instances.Response.InstanceIdSet)))
+			if err != nil {
+				continue
+			}
+			var clusterName = nodes.GetClusterNameFromInstanceIdSet(instances)
+			nodes.AddNodeFromInstanceIdSet(res, clusterName)
+			// TODO 高可用，等待节点已加入集群再删除原有节点
+			c.DeleteInstance(instances.Response.InstanceIdSet)
+			nodes.DeleteNodeFromInstanceIdSet(res)
+			return
+		}
+	}()
+}
+
+func (c *InstanceTencent) DeleteInstance(ids []*string) error {
+	cpf := profile.NewClientProfile()
+	client, _ := cvm.NewClient(credential, regions.Beijing, cpf)
+	request := cvm.NewTerminateInstancesRequest()
+	request.InstanceIds = ids
+	_, err := client.TerminateInstances(request)
+	if err != nil {
+		return err
+	}
+	return nil
 }

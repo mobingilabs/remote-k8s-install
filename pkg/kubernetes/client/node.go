@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"mobingi/ocean/pkg/kubernetes/client/nodes"
 	"mobingi/ocean/pkg/log"
 	"time"
 
@@ -11,8 +12,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
-
-var Nodes = make(map[string]string)
 
 type Node struct {
 	Client      *kubernetes.Clientset
@@ -88,9 +87,7 @@ func (n *Node) NewUnhealthyNodeTimer(done context.Context) {
 							if err != nil {
 								log.Error(err)
 							} else {
-								for _, id := range res.Response.InstanceIdSet {
-									Nodes[*id] = n.ClusterName
-								}
+								nodes.AddNodeFromInstanceIdSet(res, n.ClusterName)
 								lastNum = num
 								lastTime = time.Now()
 							}
@@ -100,9 +97,7 @@ func (n *Node) NewUnhealthyNodeTimer(done context.Context) {
 						if err != nil {
 							log.Error(err)
 						} else {
-							for _, id := range res.Response.InstanceIdSet {
-								Nodes[*id] = n.ClusterName
-							}
+							nodes.AddNodeFromInstanceIdSet(res, n.ClusterName)
 							lastNum = num
 							lastTime = time.Now()
 						}

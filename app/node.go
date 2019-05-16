@@ -4,6 +4,7 @@ import (
 	"context"
 	pb "mobingi/ocean/app/proto"
 	"mobingi/ocean/pkg/kubernetes/client"
+	"mobingi/ocean/pkg/kubernetes/client/nodes"
 	"mobingi/ocean/pkg/services/tencent"
 	"mobingi/ocean/pkg/storage"
 )
@@ -11,7 +12,7 @@ import (
 type node struct{}
 
 func (n *node) Join(ctx context.Context, cfg *pb.InstanceNode) (*pb.NodeConfs, error) {
-	var clusterName = client.Nodes[cfg.InstanceID]
+	var clusterName = nodes.Nodes[cfg.InstanceID]
 
 	storage := storage.NewStorage()
 	bootstrapconf, err := storage.GetKubeconf(clusterName, "bootstrap.conf")
@@ -38,7 +39,7 @@ func (n *node) Join(ctx context.Context, cfg *pb.InstanceNode) (*pb.NodeConfs, e
 }
 
 func (n *node) Delete(ctx context.Context, cfg *pb.InstanceNode) (*pb.Response, error) {
-	var clusterName = client.Nodes[cfg.InstanceID]
+	var clusterName = nodes.Nodes[cfg.InstanceID]
 
 	clientset, err := client.NewClient(clusterName)
 	if err != nil {
@@ -52,13 +53,13 @@ func (n *node) Delete(ctx context.Context, cfg *pb.InstanceNode) (*pb.Response, 
 		return nil, err
 	}
 
-	delete(client.Nodes, cfg.InstanceID)
+	delete(nodes.Nodes, cfg.InstanceID)
 
 	return &pb.Response{Message: ""}, nil
 }
 
 func (n *node) SpotInstanceDestroy(ctx context.Context, cfg *pb.InstanceNode) (*pb.Response, error) {
-	var clusterName = client.Nodes[cfg.InstanceID]
+	var clusterName = nodes.Nodes[cfg.InstanceID]
 
 	insClient := &tencent.InstanceTencent{}
 	res, err := insClient.CreateInstance(1)
@@ -66,7 +67,8 @@ func (n *node) SpotInstanceDestroy(ctx context.Context, cfg *pb.InstanceNode) (*
 		return nil, err
 	}
 	// TODO 如何确定已创建成功
-	client.Nodes[*res.Response.InstanceIdSet[0]] = clusterName
+	nodes.AddNodeFromInstanceIdSet(res, clusterName)
+	// client.Nodes[*res.Response.InstanceIdSet[0]] = clusterName
 
 	return n.Delete(ctx, cfg)
 }

@@ -6,6 +6,7 @@ import (
 	pb "mobingi/ocean/app/proto"
 	"mobingi/ocean/pkg/config"
 	"mobingi/ocean/pkg/kubernetes/client"
+	"mobingi/ocean/pkg/kubernetes/client/nodes"
 	"mobingi/ocean/pkg/log"
 	"mobingi/ocean/pkg/phases"
 	"mobingi/ocean/pkg/services/tencent"
@@ -66,9 +67,7 @@ func (c *cluster) Init(ctx context.Context, clusterCfg *pb.ClusterConfig) (*pb.R
 	if err != nil {
 		return nil, err
 	}
-	for _, id := range res.Response.InstanceIdSet {
-		client.Nodes[*id] = cfg.ClusterName
-	}
+	nodes.AddNodeFromInstanceIdSet(res, cfg.ClusterName)
 
 	err = client.CreateMonitor(cfg.ClusterName)
 	if err != nil {

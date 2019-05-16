@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"mobingi/ocean/pkg/kubernetes/client/nodes"
 	"mobingi/ocean/pkg/storage"
 )
 
@@ -26,7 +27,7 @@ func InitClustersAndNodes() error {
 			return err
 		}
 		for _, n := range nodeList.Items {
-			Nodes[n.GetName()] = name
+			nodes.Nodes[n.GetName()] = name
 		}
 	}
 	return nil
