@@ -84,7 +84,10 @@ func (c *cluster) Delete(ctx context.Context, clusterCfg *pb.ClusterConfig) (*pb
 		return nil, err
 	}
 	// Stop cluster monitors
-	client.Monitors[cfg.ClusterName]()
+	err = client.StopMonitor(cfg.ClusterName)
+	if err != nil {
+		log.Infof("%s 未创建集群监视器", cfg.ClusterName)
+	}
 	// Delete cluster storage
 	storage := configstorage.NewStorage()
 	storage.Drop(cfg)

@@ -2,7 +2,9 @@ package client
 
 import (
 	"context"
+	"errors"
 	"mobingi/ocean/pkg/kubernetes/client/nodes"
+	"mobingi/ocean/pkg/log"
 	"mobingi/ocean/pkg/storage"
 )
 
@@ -16,19 +18,20 @@ func InitClustersAndNodes() error {
 		return err
 	}
 	for _, name := range clusterArr {
-		Clusters = append(Clusters, name)
-
 		node, err := NewNodeClient(name)
 		if err != nil {
 			return err
 		}
 		nodeList, err := node.GetNode()
 		if err != nil {
-			return err
+			log.Errorf("%s: "+err.Error(), name)
+			continue
+			// return err
 		}
 		for _, n := range nodeList.Items {
 			nodes.Nodes[n.GetName()] = name
 		}
+		Clusters = append(Clusters, name)
 	}
 	return nil
 }
@@ -48,5 +51,14 @@ func CreateMonitor(cluster string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	Monitors[cluster] = cancel
 	node.NewUnhealthyNodeTimer(ctx)
+	return nil
+}
+
+func StopMonitor(cluster string) error {
+	cancel, ok := Monitors[cluster]
+	if !ok {
+		return errors.New("Not found")
+	}
+	cancel()
 	return nil
 }

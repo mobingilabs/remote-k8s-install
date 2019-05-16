@@ -66,9 +66,7 @@ func (n *node) SpotInstanceDestroy(ctx context.Context, cfg *pb.InstanceNode) (*
 	if err != nil {
 		return nil, err
 	}
-	// TODO 如何确定已创建成功
 	nodes.AddNodeFromInstanceIdSet(res, clusterName)
-	// client.Nodes[*res.Response.InstanceIdSet[0]] = clusterName
 
 	return n.Delete(ctx, cfg)
 }
