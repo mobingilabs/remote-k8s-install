@@ -70,7 +70,7 @@ func (c *cluster) Init(ctx context.Context, clusterCfg *pb.ClusterConfig) (*pb.R
 		client.Nodes[*id] = cfg.ClusterName
 	}
 
-	err = client.ClustersMonitor()
+	err = client.CreateMonitor(cfg.ClusterName)
 	if err != nil {
 		return nil, err
 	}
@@ -84,6 +84,8 @@ func (c *cluster) Delete(ctx context.Context, clusterCfg *pb.ClusterConfig) (*pb
 	if err != nil {
 		return nil, err
 	}
+	// Stop cluster monitors
+	client.Monitors[cfg.ClusterName]()
 	// Delete cluster storage
 	storage := configstorage.NewStorage()
 	storage.Drop(cfg)

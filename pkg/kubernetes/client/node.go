@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"mobingi/ocean/pkg/log"
 	"time"
 
@@ -62,7 +63,7 @@ func (n *Node) GetUnhealthyNodeNum() (int64, error) {
 	return num, nil
 }
 
-func (n *Node) NewUnhealthyNodeTimer() {
+func (n *Node) NewUnhealthyNodeTimer(done context.Context) {
 	tencent.Init()
 	client := &tencent.InstanceTencent{}
 	var lastNum int64 = 0
@@ -71,16 +72,31 @@ func (n *Node) NewUnhealthyNodeTimer() {
 
 	ticker := time.NewTicker(time.Second * 5)
 	go func() {
-		for _ = range ticker.C {
-			num, err := n.GetUnhealthyNodeNum()
-			if err != nil {
-				log.Error(err)
-			}
-			if num > 0 {
-				// 小于两分钟
-				if lastTime.After(time.Now().Add(-timeoutTime)) {
-					if num > lastNum {
-						res, err := client.CreateInstance(num - lastNum)
+		for {
+			select {
+			case <-ticker.C:
+				num, err := n.GetUnhealthyNodeNum()
+				log.Info(num)
+				if err != nil {
+					log.Error(err)
+				}
+				if num > 0 {
+					// 小于两分钟
+					if lastTime.After(time.Now().Add(-timeoutTime)) {
+						if num > lastNum {
+							res, err := client.CreateInstance(num - lastNum)
+							if err != nil {
+								log.Error(err)
+							} else {
+								for _, id := range res.Response.InstanceIdSet {
+									Nodes[*id] = n.ClusterName
+								}
+								lastNum = num
+								lastTime = time.Now()
+							}
+						}
+					} else {
+						res, err := client.CreateInstance(num)
 						if err != nil {
 							log.Error(err)
 						} else {
@@ -91,18 +107,10 @@ func (n *Node) NewUnhealthyNodeTimer() {
 							lastTime = time.Now()
 						}
 					}
-				} else {
-					res, err := client.CreateInstance(num)
-					if err != nil {
-						log.Error(err)
-					} else {
-						for _, id := range res.Response.InstanceIdSet {
-							Nodes[*id] = n.ClusterName
-						}
-						lastNum = num
-						lastTime = time.Now()
-					}
 				}
+			case <-done.Done():
+				log.Infof("关闭节点监视器: %s", n.ClusterName)
+				return
 			}
 		}
 	}()

@@ -1,10 +1,12 @@
 package client
 
 import (
+	"context"
 	"mobingi/ocean/pkg/storage"
 )
 
 var Clusters []string
+var Monitors = make(map[string]context.CancelFunc)
 
 func InitClustersAndNodes() error {
 	storage := storage.NewStorage()
@@ -20,6 +22,9 @@ func InitClustersAndNodes() error {
 			return err
 		}
 		nodeList, err := node.GetNode()
+		if err != nil {
+			return err
+		}
 		for _, n := range nodeList.Items {
 			Nodes[n.GetName()] = name
 		}
@@ -27,14 +32,20 @@ func InitClustersAndNodes() error {
 	return nil
 }
 
-// TODO 自动检测新集群加入监视
-func ClustersMonitor() error {
+func InitClustersMonitor() error {
 	for _, cluster := range Clusters {
-		node, err := NewNodeClient(cluster)
-		if err != nil {
-			return err
-		}
-		node.NewUnhealthyNodeTimer()
+		CreateMonitor(cluster)
 	}
+	return nil
+}
+
+func CreateMonitor(cluster string) error {
+	node, err := NewNodeClient(cluster)
+	if err != nil {
+		return err
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	Monitors[cluster] = cancel
+	node.NewUnhealthyNodeTimer(ctx)
 	return nil
 }
