@@ -135,7 +135,7 @@ func NewRunKubeletJob(name string) *machine.Job {
 
 const masterKubeletServicedFileContent = `
 [Service]
-Environment="KUBELET_KUBECONFIG_ARGS=--cgroup-driver=systemd --fail-swap-on=false --pod-manifest-path=/etc/kubelet.d/"
+Environment="KUBELET_KUBECONFIG_ARGS=--cgroup-driver=systemd --fail-swap-on=false --pod-manifest-path=/etc/kubelet.d/ --network-plugin=cni"
 ExecStart=
 ExecStart=/usr/local/bin/kubelet \$KUBELET_KUBECONFIG_ARGS --pod-infra-container-image=cnbailian/pause:3.1
 `

@@ -24,6 +24,7 @@ func main() {
 		return
 	}
 
+	log.Info("startup")
 	if err := app.Start(); err != nil {
 		panic(err)
 	}

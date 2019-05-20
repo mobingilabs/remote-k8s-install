@@ -75,7 +75,6 @@ func (n *Node) NewUnhealthyNodeTimer(done context.Context) {
 			select {
 			case <-ticker.C:
 				num, err := n.GetUnhealthyNodeNum()
-				log.Info(num)
 				if err != nil {
 					log.Error(err)
 				}
