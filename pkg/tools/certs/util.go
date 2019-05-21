@@ -147,6 +147,7 @@ func getAPIServerAltNames(cfg *config) (*certutil.AltNames, error) {
 			//internalAPIServerVirtualIP,
 			advertiseAddress,
 			publicIP,
+			net.ParseIP("10.0.0.1"),
 		},
 	}
 
