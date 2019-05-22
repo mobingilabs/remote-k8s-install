@@ -14,8 +14,7 @@ Documentation=https://github.com/kubernetes.io/docs
 After=network.target
 
 [Service]
-ExecStart=/usr/local/bin/kubelet 
-Rstart=on-failure
+Restart=on-failure
 RestartSec=5
 
 [Install]
@@ -29,8 +28,7 @@ Environment="KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/boot
 Environment="KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml"
 EnvironmentFile=-/var/lib/kubelet/ocean-flags.env
 EnvironmentFile=-/etc/sysconfig/kubelet
-ExecStart=
-ExecStart=/usr/local/bin/kubelet \$KUBELET_KUBECONFIG_ARGS \$KUBELET_CONFIG_ARGS --allow-privileged=true
+ExecStart=/usr/local/bin/kubelet \$KUBELET_KUBECONFIG_ARGS \$KUBELET_CONFIG_ARGS \$KUBELET_KUBEADM_ARGS --allow-privileged=true
 `
 
 // var/lib/kubelet/config.yaml
@@ -114,7 +112,7 @@ volumeStatsAggPeriod: 1m0s`
 const kubeletFlagsFileName = "ocean-flags.env"
 const kubeletFlagsContent = `KUBELET_KUBEADM_ARGS=--cgroup-driver=systemd --network-plugin=cni --pod-infra-container-image=cnbailian/pause:3.1`
 
-func NewRunKubeletJob() *machine.Job {
+func NewRunKubeletJob(name string) *machine.Job {
 	job := machine.NewJob("kubelet-service")
 
 	job.AddCmd(cmdutil.NewMkdirAllCmd(filepath.Join(constants.ServiceDir, kubeletServicedDir)))
@@ -123,6 +121,33 @@ func NewRunKubeletJob() *machine.Job {
 	job.AddCmd(cmdutil.NewWriteCmd(filepath.Join(constants.ServiceDir, kubeletServicedDir, kubeletServicedName), kubeletServicedFileContent))
 	job.AddCmd(cmdutil.NewWriteCmd(filepath.Join(kubeletConfigDir, kubeletConfigName), kubeletConfigYAML))
 	job.AddCmd(cmdutil.NewWriteCmd(filepath.Join(kubeletConfigDir, kubeletFlagsFileName), kubeletFlagsContent))
+
+	job.AddCmd("hostname " + name)
+	// TODO waiting kubernetes14.0 bug fix
+	job.AddCmd("yum install -y wget")
+	job.AddCmd("wget -P /usr/local/bin/ https://kubelet-1257939309.cos.ap-beijing.myqcloud.com/kubelet")
+	job.AddCmd("chmod 777 /usr/local/bin/kubelet")
+
+	job.AddCmd(cmdutil.NewSystemStartCmd(constants.KubeletService))
+
+	return job
+}
+
+const masterKubeletServicedFileContent = `
+[Service]
+Environment="KUBELET_KUBECONFIG_ARGS=--cgroup-driver=systemd --fail-swap-on=false --pod-manifest-path=/etc/kubelet.d/ --network-plugin=cni"
+ExecStart=
+ExecStart=/usr/local/bin/kubelet \$KUBELET_KUBECONFIG_ARGS --pod-infra-container-image=cnbailian/pause:3.1
+`
+
+func NewRunMasterKubeletJob() *machine.Job {
+	job := machine.NewJob("master-kubelet-service")
+
+	job.AddCmd(cmdutil.NewMkdirAllCmd(filepath.Join(constants.ServiceDir, kubeletServicedDir)))
+	job.AddCmd(cmdutil.NewMkdirAllCmd(kubeletConfigDir))
+	job.AddCmd(cmdutil.NewMkdirAllCmd(constants.KubeletStaticPodDir))
+	job.AddCmd(cmdutil.NewWriteCmd(filepath.Join(constants.ServiceDir, constants.KubeletService), kubeletServiceTemplate))
+	job.AddCmd(cmdutil.NewWriteCmd(filepath.Join(constants.ServiceDir, kubeletServicedDir, kubeletServicedName), masterKubeletServicedFileContent))
 	job.AddCmd(cmdutil.NewSystemStartCmd(constants.KubeletService))
 
 	return job

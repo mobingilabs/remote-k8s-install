@@ -9,9 +9,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"mobingi/ocean/pkg/constants"
-	"mobingi/ocean/pkg/tools/cache"
-
 	certutil "k8s.io/client-go/util/cert"
 )
 
@@ -60,18 +57,18 @@ func writePublicKey(keyPath string, key *rsa.PublicKey) error {
 
 // write put the pki data to cache
 func writeKey(baseName string, data []byte) {
-	name := fmt.Sprintf("%s.key", baseName)
-	cache.Put(constants.CertPrefix, name, data)
+	// name := fmt.Sprintf("%s.key", baseName)
+	// cache.Put(constants.CertPrefix, name, data)
 }
 
 func writeCert(baseName string, data []byte) {
-	name := fmt.Sprintf("%s.crt", baseName)
-	cache.Put(constants.CertPrefix, name, data)
+	// name := fmt.Sprintf("%s.crt", baseName)
+	// cache.Put(constants.CertPrefix, name, data)
 }
 
 func writePub(baseName string, data []byte) {
-	name := fmt.Sprintf("%s.pub", baseName)
-	cache.Put(constants.CertPrefix, name, data)
+	// name := fmt.Sprintf("%s.pub", baseName)
+	// cache.Put(constants.CertPrefix, name, data)
 }
 
 func pathForCert(baseName string) string {
@@ -150,6 +147,7 @@ func getAPIServerAltNames(cfg *config) (*certutil.AltNames, error) {
 			//internalAPIServerVirtualIP,
 			advertiseAddress,
 			publicIP,
+			net.ParseIP("10.0.0.1"),
 		},
 	}
 

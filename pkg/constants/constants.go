@@ -3,11 +3,12 @@ package constants
 const (
 	// env
 	// ServiceDir is a dir for systemd service file
-	ServiceDir  = "/etc/systemd/system"
-	WorkDir     = "/etc/kubernetes"
-	PKIDir      = "/etc/kubernetes/pki"
-	ETCDDataDir = "/var/lib/etcd"
-	BinDir      = "/usr/local/bin"
+	ServiceDir          = "/etc/systemd/system"
+	WorkDir             = "/etc/kubernetes"
+	PKIDir              = "/etc/kubernetes/pki"
+	ETCDDataDir         = "/var/lib/etcd"
+	BinDir              = "/usr/local/bin"
+	KubeletStaticPodDir = "/etc/kubelet.d/"
 
 	// certs
 	CACertAndKeyBaseName = "ca"
@@ -29,11 +30,11 @@ const (
 
 	APIServerEtcdClientCertCommonName = "kube-apiserver-etcd-client"
 
-	EtcdCACertAndKeyBaseName     = "etcd/ca"
-	EtcdServerCertAndKeyBaseName = "etcd/server"
-	EtcdPeerCertAndKeyBaseName   = "etcd/peer"
+	EtcdCACertAndKeyBaseName                = "etcd/ca"
+	EtcdServerCertAndKeyBaseName            = "etcd/server"
+	EtcdPeerCertAndKeyBaseName              = "etcd/peer"
 	EtcdHealthcheckClientCertAndKeyBaseName = "etcd/healthcheck-client"
-	APIServerEtcdClientCertAndKeyBaseName = "apiserver-etcd-client"
+	APIServerEtcdClientCertAndKeyBaseName   = "apiserver-etcd-client"
 
 	// key
 	ServiceAccountKeyBaseName = "sa"
@@ -65,4 +66,10 @@ const (
 
 	// fileName
 	BootstrapKubeletConfName = "bootstrap-kubelet.conf"
+
+	// static pods
+	KubeApiserverPod         = "kube-apiserver.yaml"
+	KubeControllerManagerPod = "kube-controller-manager.yam"
+	KubeSchedulerPod         = "kube-scheduler.yaml"
+	EtcdPod                  = "etcd.yaml"
 )
