@@ -40,6 +40,7 @@ func CreateKubeconf(cfg *config.Config, caCert *x509.Certificate, caKey *rsa.Pri
 		kubeadmconstants.AdminKubeConfigFileName,
 		kubeadmconstants.ControllerManagerKubeConfigFileName,
 		kubeadmconstants.SchedulerKubeConfigFileName,
+		"kubelet.conf",
 	}
 
 	kubeconfs := make(map[string][]byte)
@@ -87,6 +88,14 @@ func getKubeconfigSpecs(cfg *config.Config, caCert *x509.Certificate, caKey *rsa
 			CACert:     caCert,
 			APIServer:  privateEndpoint,
 			ClientName: kubeadmconstants.SchedulerUser,
+			ClientCertAuth: &clientCertAuth{
+				CAKey: caKey,
+			},
+		},
+		"kubelet.conf": {
+			CACert:     caCert,
+			APIServer:  privateEndpoint,
+			ClientName: "system:node:nidhogg",
 			ClientCertAuth: &clientCertAuth{
 				CAKey: caKey,
 			},
