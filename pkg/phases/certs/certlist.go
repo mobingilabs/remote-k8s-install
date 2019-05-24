@@ -87,19 +87,13 @@ func newEtcdPeerCert(o Options) *cert {
 	}
 }
 
-type certList struct {
-	certs []*cert
-}
-
-func newCertList(o Options) *certList {
-	return &certList{
-		certs: []*cert{
-			newAPIServerCert(o),
-			newAPIServerKubeletClientCert(o),
-			newAPIServerEtcdClientCert(o),
-			newEtcdServerCert(o),
-			newEtcdPeerCert(o),
-		},
+func getCertList(o Options) []*cert {
+	return []*cert{
+		newAPIServerCert(o),
+		newAPIServerKubeletClientCert(o),
+		newAPIServerEtcdClientCert(o),
+		newEtcdServerCert(o),
+		newEtcdPeerCert(o),
 	}
 }
 
