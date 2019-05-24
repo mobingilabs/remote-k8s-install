@@ -4,12 +4,11 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
-	"mobingi/ocean/pkg/constants"
 
 	"k8s.io/client-go/tools/clientcmd"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	certutil "k8s.io/client-go/util/cert"
 
+	"mobingi/ocean/pkg/constants"
 	pkiutil "mobingi/ocean/pkg/util/pki"
 )
 
@@ -103,35 +102,4 @@ func buildKubeconfigFromSpec(spec *kubeconfigSpec, clusterName string) ([]byte, 
 	)
 
 	return clientcmd.Write(*config)
-}
-
-func createWithCerts(serverURL, clusterName, userName string, caCert []byte, clientKey []byte, clientCert []byte) *clientcmdapi.Config {
-	config := CreateBasic(serverURL, clusterName, userName, caCert)
-	config.AuthInfos[userName] = &clientcmdapi.AuthInfo{
-		ClientKeyData:         clientKey,
-		ClientCertificateData: clientCert,
-	}
-	return config
-}
-
-func CreateBasic(serverURL, clusterName, userName string, caCert []byte) *clientcmdapi.Config {
-	// Use the cluster and the username as the context name
-	contextName := fmt.Sprintf("%s@%s", userName, clusterName)
-
-	return &clientcmdapi.Config{
-		Clusters: map[string]*clientcmdapi.Cluster{
-			clusterName: {
-				Server:                   serverURL,
-				CertificateAuthorityData: caCert,
-			},
-		},
-		Contexts: map[string]*clientcmdapi.Context{
-			contextName: {
-				Cluster:  clusterName,
-				AuthInfo: userName,
-			},
-		},
-		AuthInfos:      map[string]*clientcmdapi.AuthInfo{},
-		CurrentContext: contextName,
-	}
 }
