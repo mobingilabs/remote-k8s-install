@@ -37,20 +37,20 @@ type config struct {
 
 type Options struct {
 	InternalEndpoint string
-	ExtrenalEndpoint string
+	ExternalEndpoint string
 	SANs             []string
 }
 
 // CreatePKIAssets will create all pki file(includ etcd)
-func CreatePKIAssets(advertiseAddress, publicIP string, SANs []string) (map[string][]byte, error) {
+func CreatePKIAssets(o Options) (map[string][]byte, error) {
 	certTree, err := getDefaultCertList().asMap().certTree()
 	if err != nil {
 		return nil, err
 	}
 	cfg := &config{
-		AdvertiseAddress: advertiseAddress,
-		SANs:             SANs,
-		PublicIP:         publicIP,
+		AdvertiseAddress: o.InternalEndpoint,
+		SANs:             o.SANs,
+		PublicIP:         o.ExternalEndpoint,
 	}
 	certs, err := certTree.createTree(cfg)
 	if err != nil {
