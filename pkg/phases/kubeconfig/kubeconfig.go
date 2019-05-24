@@ -3,14 +3,12 @@ package kubeconfig
 import (
 	"crypto/rsa"
 	"crypto/x509"
+	"fmt"
 	"mobingi/ocean/pkg/constants"
-
-	"github.com/pkg/errors"
 
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	certutil "k8s.io/client-go/util/cert"
-	kubeadmconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 
 	pkiutil "mobingi/ocean/pkg/util/pki"
 )
@@ -34,38 +32,24 @@ type Options struct {
 	// https://45.0.20.1:6443
 	ExternalEndpoint string
 	InternalEndpoint string
+
+	ClusterName string
 }
 
 func CreateKubeconf(o Options) (map[string][]byte, error) {
-	specs, err := getKubeconfigSpecs(cfg, caCert, caKey)
-	if err != nil {
-		return nil, err
-	}
+	specs := getSpecs(o)
 
-	kubeconfigFileNames := []string{
-		kubeadmconstants.AdminKubeConfigFileName,
-		kubeadmconstants.ControllerManagerKubeConfigFileName,
-		kubeadmconstants.SchedulerKubeConfigFileName,
-		"kubelet.conf",
-	}
+	kubeconfigs := make(map[string][]byte, len(specs))
 
-	kubeconfs := make(map[string][]byte)
-
-	for _, kubeconfigFileName := range kubeconfigFileNames {
-		spec, exists := specs[kubeconfigFileName]
-		if !exists {
-			return nil, errors.Errorf("could't retrive kubeconfigSpec for %s", kubeconfigFileName)
-		}
-
-		config, err := buildKubeconfigFromSpec(spec, cfg.ClusterName)
+	for k, v := range specs {
+		kubeconfig, err := buildKubeconfigFromSpec(v, o.ClusterName)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("create kubeconfigs:%s err:%v", k, v)
 		}
-		content, err := clientcmd.Write(*config)
-		kubeconfs[kubeconfigFileName] = content
+		kubeconfigs[k] = kubeconfig
 	}
 
-	return kubeconfs, nil
+	return kubeconfigs, nil
 }
 
 func getSpecs(o Options) map[string]*kubeconfigSpec {
@@ -98,7 +82,7 @@ func getSpecs(o Options) map[string]*kubeconfigSpec {
 	}
 }
 
-func buildKubeconfigFromSpec(spec *kubeconfigSpec, clusterName string) (*clientcmdapi.Config, error) {
+func buildKubeconfigFromSpec(spec *kubeconfigSpec, clusterName string) ([]byte, error) {
 	clientCertConfig := certutil.Config{
 		CommonName:   spec.ClientName,
 		Organization: spec.ClientCertAuth.Organizations,
@@ -109,14 +93,45 @@ func buildKubeconfigFromSpec(spec *kubeconfigSpec, clusterName string) (*clientc
 		return nil, err
 	}
 
-	return kubeconfigutil.CreateWithCerts(
+	config := createWithCerts(
 		spec.APIServer,
 		clusterName,
 		spec.ClientName,
 		pkiutil.EncodeCertPEM(spec.CACert),
 		pkiutil.EncodePrivateKeyPEM(clientKey),
 		pkiutil.EncodeCertPEM(clientCert),
-	), nil
+	)
 
-	return nil, nil
+	return clientcmd.Write(*config)
+}
+
+func createWithCerts(serverURL, clusterName, userName string, caCert []byte, clientKey []byte, clientCert []byte) *clientcmdapi.Config {
+	config := CreateBasic(serverURL, clusterName, userName, caCert)
+	config.AuthInfos[userName] = &clientcmdapi.AuthInfo{
+		ClientKeyData:         clientKey,
+		ClientCertificateData: clientCert,
+	}
+	return config
+}
+
+func CreateBasic(serverURL, clusterName, userName string, caCert []byte) *clientcmdapi.Config {
+	// Use the cluster and the username as the context name
+	contextName := fmt.Sprintf("%s@%s", userName, clusterName)
+
+	return &clientcmdapi.Config{
+		Clusters: map[string]*clientcmdapi.Cluster{
+			clusterName: {
+				Server:                   serverURL,
+				CertificateAuthorityData: caCert,
+			},
+		},
+		Contexts: map[string]*clientcmdapi.Context{
+			contextName: {
+				Cluster:  clusterName,
+				AuthInfo: userName,
+			},
+		},
+		AuthInfos:      map[string]*clientcmdapi.AuthInfo{},
+		CurrentContext: contextName,
+	}
 }
