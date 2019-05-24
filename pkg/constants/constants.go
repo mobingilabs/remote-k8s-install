@@ -72,4 +72,16 @@ const (
 	KubeControllerManagerPod = "kube-controller-manager.yam"
 	KubeSchedulerPod         = "kube-scheduler.yaml"
 	EtcdPod                  = "etcd.yaml"
+
+	// kubeconf file name
+	AdminConf             = "admin.conf"
+	ControllerManagerConf = "controller-manager.conf"
+	SchedulerConf         = "scheduler.conf"
+
+	// users
+	AdminUser             = "kubernetes-admin"
+	ControllerManagerUser = "system:kube-controller-manager"
+	SchedulerUser         = "system:kube-scheduler"
+
+	DefaultClusterName = "kubernetes"
 )

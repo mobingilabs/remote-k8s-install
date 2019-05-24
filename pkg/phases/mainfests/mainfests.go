@@ -272,10 +272,11 @@ func marshalToYAML(obj runtime.Object) []byte {
 	return res
 }
 
+// TODO use https
 func getEtcdPeerURL(ip string) string {
-	return fmt.Sprintf("https://%s:2380", ip)
+	return fmt.Sprintf("http://%s:2380", ip)
 }
 
 func getEtcdClientURL(ip string) string {
-	return fmt.Sprintf("https://%s:2379", ip)
+	return fmt.Sprintf("http://%s:2379", ip)
 }
