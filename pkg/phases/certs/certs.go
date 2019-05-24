@@ -13,8 +13,6 @@ import (
 
 	"github.com/pkg/errors"
 	certutil "k8s.io/client-go/util/cert"
-
-	"mobingi/ocean/pkg/constants"
 )
 
 const (
@@ -42,7 +40,7 @@ type Options struct {
 }
 
 func NewRootCACert() ([]byte, []byte, error) {
-	key, err := newPrivateKey()
+	key, err := generatePrivateKey()
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to create private key:%s", err.Error())
 	}
@@ -60,40 +58,44 @@ func NewRootCACert() ([]byte, []byte, error) {
 }
 
 func NewPKIAssets(o Options, caCert []byte, caKey []byte) (map[string][]byte, error) {
+	certs := getCertList(o)
+	for _, v := range certs {
+
+	}
+	return nil, nil
+}
+
+func NewServiceAccountKeyPair(caCert []byte, caKey []byte) ([]byte, []byte, error) {
+	/*	privateKey, err := newPrivateKey()
+		if err != nil {
+			return nil, err
+		}
+		certs[pathForKey(constants.ServiceAccountKeyBaseName)] = keyToByte(privateKey)
+		pubKeyByte, err := pubKeyToByte(&privateKey.PublicKey)
+		if err != nil {
+			return nil, err
+		}
+		certs[pathForPub(constants.ServiceAccountKeyBaseName)] = pubKeyByte*/
+
+	return nil, nil, nil
+}
+
+func newCertAndKeyFromCA(certCfg *certutil.Config, caCert *x509.Certificate, caKey *rsa.PrivateKey) ([][]byte, error) {
+	priKey, err := generatePrivateKey()
+	if err != nil {
+		return nil, fmt.Errorf("new private key err:%v", err)
+	}
+
+	cert, err := newSignedCert(certCfg, priKey, caCert, caKey)
+	if err != nil {
+		return nil, fmt.Errorf("signed ca err:%v", err)
+	}
+
 	return nil, nil
 }
 
 // CreatePKIAssets will create all pki file(includ etcd)
-func CreatePKIAssets(o Options) (map[string][]byte, error) {
-	certTree, err := getDefaultCerts().asMap().certTree()
-	if err != nil {
-		return nil, err
-	}
-	cfg := &config{
-		AdvertiseAddress: o.InternalEndpoint,
-		SANs:             o.SANs,
-		PublicIP:         o.ExternalEndpoint,
-	}
-	certs, err := certTree.createTree(cfg)
-	if err != nil {
-		return nil, errors.Wrap(err, "error creating PKI assets")
-	}
-
-	privateKey, err := newPrivateKey()
-	if err != nil {
-		return nil, err
-	}
-	certs[pathForKey(constants.ServiceAccountKeyBaseName)] = keyToByte(privateKey)
-	pubKeyByte, err := pubKeyToByte(&privateKey.PublicKey)
-	if err != nil {
-		return nil, err
-	}
-	certs[pathForPub(constants.ServiceAccountKeyBaseName)] = pubKeyByte
-
-	return certs, nil
-}
-
-func newPrivateKey() (*rsa.PrivateKey, error) {
+func generatePrivateKey() (*rsa.PrivateKey, error) {
 	return rsa.GenerateKey(rand.Reader, rsaKeySize)
 }
 
