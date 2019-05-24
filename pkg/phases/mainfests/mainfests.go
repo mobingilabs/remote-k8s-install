@@ -46,8 +46,7 @@ func GetStaticPodMainfests(o Options) map[string][]byte {
 	mainfests := make(map[string][]byte, len(pods))
 	for k, v := range pods {
 		data := marshalToYAML(v)
-		k += ".yaml"
-		mainfests[k] = data
+		mainfests[getFileName(k)] = data
 	}
 
 	return mainfests
@@ -279,4 +278,8 @@ func getEtcdPeerURL(ip string) string {
 
 func getEtcdClientURL(ip string) string {
 	return fmt.Sprintf("http://%s:2379", ip)
+}
+
+func getFileName(name string) string {
+	return fmt.Sprintf("%s.%s", name, "yaml")
 }

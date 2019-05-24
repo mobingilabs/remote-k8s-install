@@ -24,8 +24,8 @@ const (
 	CertificateBlockType   = "CERTIFICATE"
 	RSAPrivateKeyBlockType = "RSA PRIVATE KEY"
 
-	rsaKeySize   = 2048
-	duration365d = time.Hour * 24 * 365
+	rsaKeySize     = 2048
+	duration10year = 10 * time.Hour * 24 * 365
 )
 
 type config struct {
@@ -41,9 +41,31 @@ type Options struct {
 	SANs             []string
 }
 
+func NewRootCACert() ([]byte, []byte, error) {
+	key, err := newPrivateKey()
+	if err != nil {
+		return nil, nil, fmt.Errorf("unable to create private key:%s", err.Error())
+	}
+
+	cfg := certutil.Config{
+		CommonName: "kubernetes",
+		Usages:     []x509.ExtKeyUsage{x509.ExtKeyUsageAny},
+	}
+	cert, err := certutil.NewSelfSignedCACert(cfg, key)
+	if err != nil {
+		return nil, nil, fmt.Errorf("unable to create private key:%s", err.Error())
+	}
+
+	return certToByte(cert), keyToByte(key), nil
+}
+
+func NewPKIAssets(o Options, caCert []byte, caKey []byte) (map[string][]byte, error) {
+	return nil, nil
+}
+
 // CreatePKIAssets will create all pki file(includ etcd)
 func CreatePKIAssets(o Options) (map[string][]byte, error) {
-	certTree, err := getDefaultCertList().asMap().certTree()
+	certTree, err := getDefaultCerts().asMap().certTree()
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +105,7 @@ func newCACertAndKey(certSpec *certutil.Config) (*x509.Certificate, *rsa.Private
 
 	cert, err := certutil.NewSelfSignedCACert(*certSpec, key)
 	if err != nil {
-		return nil, nil, fmt.Errorf("unable to create cert:%s", cert)
+		return nil, nil, fmt.Errorf("unable to create cert:%s", certSpec.CommonName)
 	}
 
 	return cert, key, nil
@@ -132,7 +154,7 @@ func createCertTmpl(certSpec *certutil.Config, notBefore time.Time) (*x509.Certi
 		IPAddresses:  certSpec.AltNames.IPs,
 		SerialNumber: serial,
 		NotBefore:    notBefore,
-		NotAfter:     time.Now().Add(duration365d).UTC(),
+		NotAfter:     time.Now().Add(duration10year).UTC(),
 		KeyUsage:     x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:  certSpec.Usages,
 	}, nil

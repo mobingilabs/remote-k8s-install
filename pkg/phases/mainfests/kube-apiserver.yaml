@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    component: kube-apiserver
+    tier: control-plane
+  name: kube-apiserver
+  namespace: kube-system
+spec:
+  containers:
+  - command:
+    - kube-apiserver
+    - --etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt
+    - --enable-admission-plugins=NodeRestriction
+    - --advertise-address=192.168.50.173
+    - --kubelet-client-key=/etc/kubernetes/pki/apiserver-kubelet-client.key
+    - --kubelet-client-certificate=/etc/kubernetes/pki/apiserver-kubelet-client.crt
+    - --etcd-servers=http://192.168.50.173:2379,http://192.168.1.2:2379,http://192.168.1.3:2379
+    - --enable-bootstrap-token-auth=true
+    - --etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key
+    - --service-cluster-ip-range=10.96.0.0/12
+    - --client-ca-file=/etc/kubernetes/pki/ca.crt
+    - --allow-privileged=true
+    - --secure-port=6443
+    - --etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt
+    - --insecure-port=0
+    - --tls-cert-file=/etc/kubernetes/pki/apiserver.crt
+    - --authorization-mode=Node,RBAC
+    - --tls-private-key-file=/etc/kubernetes/pki/apiserver.key
+    image: k8s.gcr.io/kube-apiserver:v1.14.2
+    imagePullPolicy: IfNotPresent
+    name: kube-apiserver
+    resources: {}
+    volumeMounts:
+    - mountPath: /etc/kubernetes
+      name: etc
+  hostNetwork: true
+  priorityClassName: system-cluster-critical
+  volumes:
+  - hostPath:
+      path: /etc/kubernetes
+      type: Directory
+    name: etc
+status: {}
