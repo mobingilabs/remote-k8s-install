@@ -53,8 +53,7 @@ func (c *cluster) Init(ctx context.Context, clusterCfg *pb.ClusterConfig) (*pb.R
 		}
 	}
 	log.Info("Cluster initialized")
-	// Store bootstrap conf in the database
-	// TODO waiting for apiserver to start
+	// todo waiting for apiserver to start
 	time.Sleep(120 * time.Second)
 	err = storage.SetBootstrapConf(cfg.ClusterName)
 	if err != nil {

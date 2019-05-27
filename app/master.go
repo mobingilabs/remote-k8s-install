@@ -3,10 +3,12 @@ package app
 import (
 	"context"
 	pb "mobingi/ocean/app/proto"
-	"mobingi/ocean/pkg/kubernetes/staticpod"
+	"mobingi/ocean/pkg/constants"
 	"mobingi/ocean/pkg/phases"
+	"mobingi/ocean/pkg/phases/mainfests"
 	"mobingi/ocean/pkg/storage"
 	"mobingi/ocean/pkg/tools/machine"
+	"mobingi/ocean/pkg/util/cmd"
 )
 
 type master struct{}
@@ -27,8 +29,23 @@ func (m *master) Join(ctx context.Context, cfg *pb.ServerConfig) (*pb.Response, 
 		return nil, err
 	}
 	job := phases.MasterPrepareJob(certs, kubeconfs)
-	etcdServers, err := storage.GetEtcdServers(cfg.ClusterName)
-	job.AddAnother(staticpod.NewMasterStaticPodsJob(cfg.PrivateIP, etcdServers))
+
+	// static pod
+	o := mainfests.Options{
+		IP:                     cfg.PrivateIP,
+		NodeName:               "node0",
+		EtcdToken:              "token",
+		EtcdImage:              "cnbailian/etcd:3.3.10",
+		APIServerImage:         "cnbailian/kube-apiserver:v1.13.3",
+		ControllerManagerImage: "cnbailian/kube-controller-manager:v1.13.3",
+		SchedulerImage:         "cnbailian/kube-scheduler:v1.13.3",
+		ServiceIPRange:         "10.96.0.0/12",
+	}
+	mainfests := mainfests.GetStaticPodMainfests(o)
+	for k, v := range mainfests {
+		job.AddCmd(cmd.NewWriteCmd(constants.KubeletStaticPodDir+k, string(v)))
+	}
+
 	err = machine.Run(job)
 	if err != nil {
 		return nil, err
