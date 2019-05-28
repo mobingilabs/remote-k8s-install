@@ -7,11 +7,11 @@ import (
 	"mobingi/ocean/pkg/config"
 	"mobingi/ocean/pkg/kubernetes/client"
 	"mobingi/ocean/pkg/kubernetes/client/nodes"
+	"mobingi/ocean/pkg/kubernetes/service"
 	"mobingi/ocean/pkg/log"
 	"mobingi/ocean/pkg/phases"
 	"mobingi/ocean/pkg/services/tencent"
 	configstorage "mobingi/ocean/pkg/storage"
-	"time"
 )
 
 type cluster struct{}
@@ -53,13 +53,16 @@ func (c *cluster) Init(ctx context.Context, clusterCfg *pb.ClusterConfig) (*pb.R
 		}
 	}
 	log.Info("Cluster initialized")
-	// Store bootstrap conf in the database
-	// TODO waiting for apiserver to start
-	time.Sleep(120 * time.Second)
-	err = storage.SetBootstrapConf(cfg.ClusterName)
+
+	adminconf, err := storage.GetKubeconf(cfg.ClusterName, "admin.conf")
 	if err != nil {
 		return nil, err
 	}
+	err = service.WaitingForApiserverStart(adminconf)
+	if err != nil {
+		return nil, err
+	}
+	log.Info("Apiserver started")
 
 	log.Info("Create node instance")
 	insClient := &tencent.InstanceTencent{}

@@ -35,11 +35,6 @@ func MasterRemoveJob() *machine.Job {
 	job.AddCmd("docker stop `docker ps --no-trunc -aq`")
 	job.AddCmd("docker rm `docker ps --no-trunc -aq`")
 	job.AddCmd(cmdutil.NewSystemStopCmd("docker"))
-	// job.AddCmd("rm -rf /etc/systemd/system/kubelet.service")
-	// job.AddCmd("rm -rf /etc/systemd/system/kubelet.service.d")
-	// delete static pod yaml file
-	// job.AddCmd("rm -rf /etc/kubelet.d")
-	// delete kubernetes config file
-	// job.AddCmd("rm -rf /etc/kubernetes")
+	job.AddCmd("rm -rf /var/lib/etcd/*")
 	return job
 }

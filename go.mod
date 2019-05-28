@@ -13,8 +13,8 @@ require (
 	github.com/gin-gonic/gin v1.3.0
 	github.com/go-openapi/spec v0.19.0 // indirect
 	github.com/go-sql-driver/mysql v1.4.1
-	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/gogo/protobuf v1.2.1 // indirect
+	github.com/golang/groupcache v0.0.0-20190129154638-5b532d6fd5ef // indirect
 	github.com/golang/protobuf v1.3.1
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/btree v1.0.0 // indirect
@@ -34,8 +34,10 @@ require (
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
+	github.com/pborman/uuid v1.2.0 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pkg/errors v0.8.1
+	github.com/prometheus/client_golang v0.9.3 // indirect
 	github.com/russross/blackfriday v2.0.0+incompatible // indirect
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/spf13/afero v1.2.2 // indirect
@@ -55,6 +57,7 @@ require (
 	google.golang.org/grpc v1.20.1
 	gopkg.in/go-playground/validator.v8 v8.18.2 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
+	gopkg.in/square/go-jose.v2 v2.3.1 // indirect
 	gopkg.in/yaml.v2 v2.2.2
 	k8s.io/api v0.0.0-20190425012535-181e1f9c52c1
 	k8s.io/apiextensions-apiserver v0.0.0-20190330190201-4cac3cbacb4e // indirect
