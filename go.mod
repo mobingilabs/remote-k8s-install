@@ -12,7 +12,12 @@ require (
 	github.com/gin-contrib/sse v0.0.0-20190301062529-5545eab6dad3 // indirect
 	github.com/gin-gonic/gin v1.3.0
 	github.com/go-openapi/spec v0.19.0 // indirect
+<<<<<<< HEAD
 	github.com/go-sql-driver/mysql v1.4.1
+=======
+	github.com/go-sql-driver/mysql v1.4.1 // indirect
+	github.com/go-stack/stack v1.8.0 // indirect
+>>>>>>> 6c65321... static pod
 	github.com/gogo/protobuf v1.2.1 // indirect
 	github.com/golang/groupcache v0.0.0-20190129154638-5b532d6fd5ef // indirect
 	github.com/golang/protobuf v1.3.1
@@ -71,7 +76,7 @@ require (
 	k8s.io/klog v0.2.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20190401085232-94e1e7b7574c // indirect
 	k8s.io/kube-proxy v0.0.0-20190320190624-78a1c9778e0e // indirect
-	k8s.io/kubelet v0.0.0-20190313123811-3556bcde9670 // indirect
+	k8s.io/kubelet v0.0.0-20190313123811-3556bcde9670
 	k8s.io/kubernetes v1.14.1
 	k8s.io/utils v0.0.0-20190308190857-21c4ce38f2a7 // indirect
 )
