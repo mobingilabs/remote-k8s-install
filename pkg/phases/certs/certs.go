@@ -26,6 +26,7 @@ const (
 )
 
 type Options struct {
+	// now it is ip
 	InternalEndpoint string
 	ExternalEndpoint string
 	SANs             []string
@@ -59,6 +60,13 @@ func NewPKIAssets(o Options) (map[string][]byte, error) {
 		pkiAssets[nameForKey(v.name)] = keyByte
 	}
 
+	priKey, pubKey, err := newServiceAccountKeyPair()
+	if err != nil {
+		return nil, err
+	}
+	pkiAssets[nameForKey("sa")] = priKey
+	pkiAssets[nameForPub("sa")] = pubKey
+
 	return pkiAssets, nil
 }
 
@@ -80,20 +88,18 @@ func newRootCA() (*x509.Certificate, *rsa.PrivateKey, error) {
 	return cert, key, nil
 }
 
-// TODO provide service account pub and key
-func newServiceAccountKeyPair(caCert []byte, caKey []byte) ([]byte, []byte, error) {
-	/*	privateKey, err := newPrivateKey()
-		if err != nil {
-			return nil, err
-		}
-		certs[pathForKey(constants.ServiceAccountKeyBaseName)] = keyToByte(privateKey)
-		pubKeyByte, err := pubKeyToByte(&privateKey.PublicKey)
-		if err != nil {
-			return nil, err
-		}
-		certs[pathForPub(constants.ServiceAccountKeyBaseName)] = pubKeyByte*/
+func newServiceAccountKeyPair() ([]byte, []byte, error) {
+	privateKey, err := generatePrivateKey()
+	if err != nil {
+		return nil, nil, err
+	}
+	priKeyByte := keyToByte(privateKey)
+	pubKeyByte, err := pubKeyToByte(&privateKey.PublicKey)
+	if err != nil {
+		return nil, nil, fmt.Errorf("pub key to byte err:%v", err)
+	}
 
-	return nil, nil, nil
+	return priKeyByte, pubKeyByte, nil
 }
 
 func newCertAndKeyFromCA(certCfg certutil.Config, caCert *x509.Certificate, caKey *rsa.PrivateKey) (*x509.Certificate, *rsa.PrivateKey, error) {

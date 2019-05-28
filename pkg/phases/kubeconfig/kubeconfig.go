@@ -28,6 +28,9 @@ type clientCertAuth struct {
 }
 
 type Options struct {
+	// now is the machine's hostname
+	Nodes []string
+
 	CaCert []byte
 	CaKey  []byte
 
@@ -35,13 +38,11 @@ type Options struct {
 	ExternalEndpoint string
 	InternalEndpoint string
 
-	// now is hostname
-	Nodes []string
-
 	ClusterName string
 }
 
-func NewKubeconf(o Options) (map[string][]byte, error) {
+// NewKubeconfigs return confs
+func NewKubeconfigs(o Options) (map[string][]byte, error) {
 	specs := getSpecs(o)
 
 	kubeconfigs := make(map[string][]byte, len(specs))
