@@ -14,7 +14,6 @@ type Cluster interface {
 	Cert
 	Kubeconf
 	EtcdServer
-	Bootatrap
 }
 
 type Cert interface {
@@ -32,10 +31,6 @@ type Kubeconf interface {
 type EtcdServer interface {
 	SetEtcdServers(cfg *config.Config) error
 	GetEtcdServers(clusterName string) (string, error)
-}
-
-type Bootatrap interface {
-	SetBootstrapConf(clusterName string) error
 }
 
 func NewStorage() Cluster {

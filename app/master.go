@@ -31,7 +31,7 @@ func (m *master) Join(ctx context.Context, cfg *pb.ServerConfig) (*pb.Response, 
 	job := phases.MasterPrepareJob(certs, kubeconfs)
 
 	// static pod
-	o := mainfests.Options{
+	opt := mainfests.Options{
 		IP:                     cfg.PrivateIP,
 		NodeName:               "node0",
 		EtcdToken:              "token",
@@ -41,7 +41,7 @@ func (m *master) Join(ctx context.Context, cfg *pb.ServerConfig) (*pb.Response, 
 		SchedulerImage:         "cnbailian/kube-scheduler:v1.13.3",
 		ServiceIPRange:         "10.96.0.0/12",
 	}
-	mainfests := mainfests.GetStaticPodMainfests(o)
+	mainfests := mainfests.GetStaticPodMainfests(opt)
 	for k, v := range mainfests {
 		job.AddCmd(cmd.NewWriteCmd(constants.KubeletStaticPodDir+k, string(v)))
 	}

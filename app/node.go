@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	pb "mobingi/ocean/app/proto"
+	"mobingi/ocean/pkg/kubernetes/bootstrap"
 	"mobingi/ocean/pkg/kubernetes/client"
 	"mobingi/ocean/pkg/kubernetes/client/nodes"
 	"mobingi/ocean/pkg/services/tencent"
@@ -15,7 +16,12 @@ func (n *node) Join(ctx context.Context, cfg *pb.InstanceNode) (*pb.NodeConfs, e
 	var clusterName = nodes.Nodes[cfg.InstanceID]
 
 	storage := storage.NewStorage()
-	bootstrapconf, err := storage.GetKubeconf(clusterName, "bootstrap.conf")
+
+	adminConf, err := storage.GetKubeconf(clusterName, "admin.conf")
+	bootstrapconf, err := bootstrap.Bootstrap(adminConf)
+	if err != nil {
+		return nil, err
+	}
 	if err != nil {
 		return nil, err
 	}
