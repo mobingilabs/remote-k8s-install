@@ -1,27 +1,14 @@
-/*
-Copyright 2018 The Kubernetes Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package certs
 
 import (
 	"crypto/x509"
-
-	certutil "k8s.io/client-go/util/cert"
+	"fmt"
+	"net"
 
 	"mobingi/ocean/pkg/constants"
+
+	certutil "k8s.io/client-go/util/cert"
+	"k8s.io/kubernetes/pkg/registry/core/service/ipallocator"
 )
 
 type cert struct {
@@ -29,18 +16,47 @@ type cert struct {
 	config certutil.Config
 }
 
-func newAPIServerCert(o Options) *cert {
+func newAPIServerCert(o Options) (*cert, error) {
+	internalAddress := net.ParseIP(o.InternalEndpoint)
+	if internalAddress == nil {
+		return nil, fmt.Errorf("unable to parse internal endpoint:%q", o.InternalEndpoint)
+	}
+	externalAddress := net.ParseIP(o.ExternalEndpoint)
+	if externalAddress == nil {
+		return nil, fmt.Errorf("unable to parse external endpoint:%q", o.ExternalEndpoint)
+	}
+
+	_, svcSubnet, err := net.ParseCIDR(o.ServiceSubnet)
+	if err != nil {
+		return nil, fmt.Errorf("parse service subnet %q error:%v", svcSubnet, err)
+	}
+
+	apiserverVirutalIP, err := ipallocator.GetIndexedIP(svcSubnet, 1)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get first ip address")
+	}
+
 	return &cert{
 		name: "apiserver",
 		config: certutil.Config{
 			CommonName: constants.APIServerCertCommonName,
 			Usages:     []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+			AltNames: certutil.AltNames{
+				DNSNames: []string{
+					"kubernetes",
+					"kubernetes.default",
+				},
+				IPs: []net.IP{
+					apiserverVirutalIP,
+					internalAddress,
+					externalAddress,
+				},
+			},
 		},
-		// TODO makeAltNamesMutator(getAPIServerAltNames),
-	}
+	}, nil
 }
 
-func newAPIServerKubeletClientCert(o Options) *cert {
+func newAPIServerKubeletClientCert() *cert {
 	return &cert{
 		name: "apiserver-kubelet-client",
 		config: certutil.Config{
@@ -51,7 +67,7 @@ func newAPIServerKubeletClientCert(o Options) *cert {
 	}
 }
 
-func newAPIServerEtcdClientCert(o Options) *cert {
+func newAPIServerEtcdClientCert() *cert {
 	return &cert{
 		name: "apiserver-etcd-client",
 		config: certutil.Config{
@@ -59,50 +75,53 @@ func newAPIServerEtcdClientCert(o Options) *cert {
 			Organization: []string{constants.MastersGroup},
 			Usages:       []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 		},
-		/*
-			configMutators: []configMutatorsFunc{
-				makeAltNamesMutator(getEtcdAltNames),
-			},*/
 	}
 }
 
 func newEtcdServerCert(o Options) *cert {
+	ips := make([]net.IP, 0, len(o.SANs))
+	for _, v := range o.SANs {
+		ips = append(ips, net.ParseIP(v))
+	}
 	return &cert{
 		name: "etcd-server",
 		config: certutil.Config{
-			//TODO CommonName: "xxx",
 			Usages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
+			AltNames: certutil.AltNames{
+				IPs: ips,
+			},
 		},
-		// TODO makeAltNamesMutator(getEtcdAltNames),
 	}
 }
 
 func newEtcdPeerCert(o Options) *cert {
+	ips := make([]net.IP, 0, len(o.SANs))
+	for _, v := range o.SANs {
+		ips = append(ips, net.ParseIP(v))
+	}
+
 	return &cert{
 		name: "etcd-peer",
 		config: certutil.Config{
 			Usages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
+			AltNames: certutil.AltNames{
+				IPs: ips,
+			},
 		},
-		// TODO		makeAltNamesMutator(getEtcdAltNames),setCommonNameToNodeName(),
 	}
 }
 
-func getCertList(o Options) []*cert {
+func getCertList(o Options) ([]*cert, error) {
+	apiserverCert, err := newAPIServerCert(o)
+	if err != nil {
+		return nil, err
+	}
+
 	return []*cert{
-		newAPIServerCert(o),
-		newAPIServerKubeletClientCert(o),
-		newAPIServerEtcdClientCert(o),
+		apiserverCert,
+		newAPIServerKubeletClientCert(),
+		newAPIServerEtcdClientCert(),
 		newEtcdServerCert(o),
 		newEtcdPeerCert(o),
-	}
+	}, nil
 }
-
-/*
-func setCommonNameToNodeName() configMutatorsFunc {
-	return func(cc *certutil.Config, cfg *config) error {
-		//TODO	cc.CommonName = cfg.NodeRegistration.Name
-		cc.CommonName = "etcd"
-		return nil
-	}
-}
-*/

@@ -5,8 +5,11 @@ import (
 	"crypto/x509"
 	"fmt"
 
-	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/keyutil"
+
 	certutil "k8s.io/client-go/util/cert"
+
+	"k8s.io/client-go/tools/clientcmd"
 
 	"mobingi/ocean/pkg/constants"
 	pkiutil "mobingi/ocean/pkg/util/pki"
@@ -25,8 +28,8 @@ type clientCertAuth struct {
 }
 
 type Options struct {
-	CaCert *x509.Certificate
-	CaKey  *rsa.PrivateKey
+	CaCert []byte
+	CaKey  []byte
 
 	// https://45.0.20.1:6443
 	ExternalEndpoint string
@@ -35,7 +38,7 @@ type Options struct {
 	ClusterName string
 }
 
-func CreateKubeconf(o Options) (map[string][]byte, error) {
+func NewKubeconf(o Options) (map[string][]byte, error) {
 	specs := getSpecs(o)
 
 	kubeconfigs := make(map[string][]byte, len(specs))
@@ -52,30 +55,43 @@ func CreateKubeconf(o Options) (map[string][]byte, error) {
 }
 
 func getSpecs(o Options) map[string]*kubeconfigSpec {
+	certs, _ := certutil.ParseCertsPEM(o.CaCert)
+	caCert := certs[0]
+	key, _ := keyutil.ParsePrivateKeyPEM(o.CaKey)
+	caKey := key.(*rsa.PrivateKey)
 	return map[string]*kubeconfigSpec{
 		constants.AdminConf: {
-			CACert:     o.CaCert,
+			CACert:     caCert,
 			APIServer:  o.ExternalEndpoint,
 			ClientName: constants.AdminUser,
 			ClientCertAuth: &clientCertAuth{
-				CAKey:         o.CaKey,
+				CAKey:         caKey,
 				Organizations: []string{constants.MastersGroup},
 			},
 		},
 		constants.ControllerManagerConf: {
-			CACert:     o.CaCert,
+			CACert:     caCert,
 			APIServer:  o.InternalEndpoint,
 			ClientName: constants.ControllerManagerUser,
 			ClientCertAuth: &clientCertAuth{
-				CAKey: o.CaKey,
+				CAKey: caKey,
 			},
 		},
 		constants.SchedulerConf: {
-			CACert:     o.CaCert,
+			CACert:     caCert,
 			APIServer:  o.InternalEndpoint,
 			ClientName: constants.SchedulerUser,
 			ClientCertAuth: &clientCertAuth{
-				CAKey: o.CaKey,
+				CAKey: caKey,
+			},
+		},
+		"bootstrap.conf": {
+			CACert:     caCert,
+			APIServer:  o.InternalEndpoint,
+			ClientName: fmt.Sprintf("%s:%s", "system:node", "iz2ze0eeufai4d1d8oggpmz"),
+			ClientCertAuth: &clientCertAuth{
+				CAKey:         caKey,
+				Organizations: []string{constants.NodesGroup},
 			},
 		},
 	}

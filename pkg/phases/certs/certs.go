@@ -11,7 +11,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/pkg/errors"
 	certutil "k8s.io/client-go/util/cert"
 )
 
@@ -26,46 +25,63 @@ const (
 	duration10year = 10 * time.Hour * 24 * 365
 )
 
-type config struct {
-	AdvertiseAddress string
-	PublicIP         string
-
-	SANs []string //now is master machines private ip
-}
-
 type Options struct {
 	InternalEndpoint string
 	ExternalEndpoint string
 	SANs             []string
+	ServiceSubnet    string
 }
 
-func NewRootCACert() ([]byte, []byte, error) {
+// NewPKIAssets will create all cert and key what we use
+func NewPKIAssets(o Options) (map[string][]byte, error) {
+	caCert, caKey, err := newRootCA()
+	if err != nil {
+		return nil, fmt.Errorf("new ca err:%v", err)
+	}
+	rootCAByte, rootKeyByte := certAndKeyToByte(caCert, caKey)
+
+	certs, err := getCertList(o)
+	if err != nil {
+		return nil, fmt.Errorf("new pki assests err:%v", err)
+	}
+
+	pkiAssets := make(map[string][]byte, len(certs)+1)
+	pkiAssets[nameForCert("ca")] = rootCAByte
+	pkiAssets[nameForKey("ca")] = rootKeyByte
+	for _, v := range certs {
+		cert, key, err := newCertAndKeyFromCA(v.config, caCert, caKey)
+		if err != nil {
+			return nil, fmt.Errorf("create cert and key for %s err:%v", v.name, err)
+		}
+		caByte, keyByte := certAndKeyToByte(cert, key)
+
+		pkiAssets[nameForCert(v.name)] = caByte
+		pkiAssets[nameForKey(v.name)] = keyByte
+	}
+
+	return pkiAssets, nil
+}
+
+func newRootCA() (*x509.Certificate, *rsa.PrivateKey, error) {
 	key, err := generatePrivateKey()
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to create private key:%s", err.Error())
 	}
 
-	cfg := certutil.Config{
+	certCfg := certutil.Config{
 		CommonName: "kubernetes",
 		Usages:     []x509.ExtKeyUsage{x509.ExtKeyUsageAny},
 	}
-	cert, err := certutil.NewSelfSignedCACert(cfg, key)
+	cert, err := certutil.NewSelfSignedCACert(certCfg, key)
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to create private key:%s", err.Error())
 	}
 
-	return certToByte(cert), keyToByte(key), nil
+	return cert, key, nil
 }
 
-func NewPKIAssets(o Options, caCert []byte, caKey []byte) (map[string][]byte, error) {
-	certs := getCertList(o)
-	for _, v := range certs {
-
-	}
-	return nil, nil
-}
-
-func NewServiceAccountKeyPair(caCert []byte, caKey []byte) ([]byte, []byte, error) {
+// TODO provide service account pub and key
+func newServiceAccountKeyPair(caCert []byte, caKey []byte) ([]byte, []byte, error) {
 	/*	privateKey, err := newPrivateKey()
 		if err != nil {
 			return nil, err
@@ -80,44 +96,26 @@ func NewServiceAccountKeyPair(caCert []byte, caKey []byte) ([]byte, []byte, erro
 	return nil, nil, nil
 }
 
-func newCertAndKeyFromCA(certCfg *certutil.Config, caCert *x509.Certificate, caKey *rsa.PrivateKey) ([][]byte, error) {
-	priKey, err := generatePrivateKey()
+func newCertAndKeyFromCA(certCfg certutil.Config, caCert *x509.Certificate, caKey *rsa.PrivateKey) (*x509.Certificate, *rsa.PrivateKey, error) {
+	key, err := generatePrivateKey()
 	if err != nil {
-		return nil, fmt.Errorf("new private key err:%v", err)
+		return nil, nil, fmt.Errorf("new private key err:%v", err)
 	}
 
-	cert, err := newSignedCert(certCfg, priKey, caCert, caKey)
+	cert, err := newSignedCert(certCfg, key, caCert, caKey)
 	if err != nil {
-		return nil, fmt.Errorf("signed ca err:%v", err)
-	}
-
-	return nil, nil
-}
-
-// CreatePKIAssets will create all pki file(includ etcd)
-func generatePrivateKey() (*rsa.PrivateKey, error) {
-	return rsa.GenerateKey(rand.Reader, rsaKeySize)
-}
-
-func newCACertAndKey(certSpec *certutil.Config) (*x509.Certificate, *rsa.PrivateKey, error) {
-	key, err := newPrivateKey()
-	if err != nil {
-		return nil, nil, fmt.Errorf("unable to create private key:%s", err.Error())
-	}
-
-	cert, err := certutil.NewSelfSignedCACert(*certSpec, key)
-	if err != nil {
-		return nil, nil, fmt.Errorf("unable to create cert:%s", certSpec.CommonName)
+		return nil, nil, fmt.Errorf("signed ca err:%v", err)
 	}
 
 	return cert, key, nil
 }
 
-func newSignedCert(certSpec *certutil.Config, key crypto.Signer, caCert *x509.Certificate, caKey crypto.Signer) (*x509.Certificate, error) {
-	if err := validateCertSpec(certSpec); err != nil {
-		return nil, err
-	}
-	certTmpl, err := createCertTmpl(certSpec, caCert.NotBefore)
+func generatePrivateKey() (*rsa.PrivateKey, error) {
+	return rsa.GenerateKey(rand.Reader, rsaKeySize)
+}
+
+func newSignedCert(certSpec certutil.Config, key crypto.Signer, caCert *x509.Certificate, caKey crypto.Signer) (*x509.Certificate, error) {
+	certTmpl, err := createCertTmpl(&certSpec, caCert.NotBefore)
 	if err != nil {
 		return nil, err
 	}
@@ -128,18 +126,6 @@ func newSignedCert(certSpec *certutil.Config, key crypto.Signer, caCert *x509.Ce
 	}
 
 	return x509.ParseCertificate(certDERBytes)
-}
-
-func validateCertSpec(certSpec *certutil.Config) error {
-	if len(certSpec.CommonName) == 0 {
-		return errors.New("must specify a CommonName")
-	}
-
-	if len(certSpec.Usages) == 0 {
-		return errors.New("must specify at least one ExtKeyUsage")
-	}
-
-	return nil
 }
 
 func createCertTmpl(certSpec *certutil.Config, notBefore time.Time) (*x509.Certificate, error) {
