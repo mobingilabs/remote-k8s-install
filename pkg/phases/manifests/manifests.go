@@ -213,13 +213,14 @@ func fillPods(pods map[string]*v1.Pod, name string) {
 
 func getAPIServerCommand(extraArguments map[string]string) []string {
 	defaultArguments := map[string]string{
-		"allow-privileged":   "true",
-		"authorization-mode": "Node,RBAC",
-		"insecure-port":      "0",
-		"secure-port":        "6443",
-		// 		"anoymous-auth":               "false",
+		"allow-privileged":            "true",
+		"authorization-mode":          "Node,RBAC",
+		"insecure-port":               "0",
+		"secure-port":                 "6443",
+		"anoymous-auth":               "false",
 		"enable-admission-plugins":    "NodeRestriction",
 		"enable-bootstrap-token-auth": "true",
+		"service-account-key-file":    "/etc/kubernetes/pki/sa.pub",
 
 		"client-ca-file": "/etc/kubernetes/pki/ca.crt",
 		//"etcd-cafile":                "/etc/kubernetes/pki/ca.crt",
@@ -236,14 +237,16 @@ func getAPIServerCommand(extraArguments map[string]string) []string {
 
 func getControllerManagerCommand(extraArguments map[string]string) []string {
 	defaultArguments := map[string]string{
-		"bind-address":              "127.0.0.1",
-		"kubeconfig":                "/etc/kubernetes/controller-manager.conf",
-		"root-ca-file":              "/etc/kubernetes/pki/ca.crt",
-		"client-ca-file":            "/etc/kubernetes/pki/ca.crt",
-		"cluster-signing-cert-file": "/etc/kubernetes/pki/ca.crt",
-		"cluster-signing-key-file":  "/etc/kubernetes/pki/ca.key",
-		"controllers":               "*,bootstrapsigner,tokencleaner",
-		"leader-elect":              "true",
+		"bind-address":                     "127.0.0.1",
+		"kubeconfig":                       "/etc/kubernetes/controller-manager.conf",
+		"root-ca-file":                     "/etc/kubernetes/pki/ca.crt",
+		"client-ca-file":                   "/etc/kubernetes/pki/ca.crt",
+		"cluster-signing-cert-file":        "/etc/kubernetes/pki/ca.crt",
+		"cluster-signing-key-file":         "/etc/kubernetes/pki/ca.key",
+		"controllers":                      "*,bootstrapsigner,tokencleaner",
+		"leader-elect":                     "true",
+		"service-account-private-key-file": "/etc/kubernetes/pki/sa.key",
+		"use-service-account-credentials":  "true",
 	}
 
 	return buildCommand(KubeControllerManager, defaultArguments, extraArguments)
