@@ -35,6 +35,9 @@ type Options struct {
 	ExternalEndpoint string
 	InternalEndpoint string
 
+	// now is hostname
+	Nodes []string
+
 	ClusterName string
 }
 
@@ -59,7 +62,7 @@ func getSpecs(o Options) map[string]*kubeconfigSpec {
 	caCert := certs[0]
 	key, _ := keyutil.ParsePrivateKeyPEM(o.CaKey)
 	caKey := key.(*rsa.PrivateKey)
-	return map[string]*kubeconfigSpec{
+	specs := map[string]*kubeconfigSpec{
 		constants.AdminConf: {
 			CACert:     caCert,
 			APIServer:  o.ExternalEndpoint,
@@ -85,16 +88,21 @@ func getSpecs(o Options) map[string]*kubeconfigSpec {
 				CAKey: caKey,
 			},
 		},
-		"bootstrap.conf": {
+	}
+
+	for _, v := range o.Nodes {
+		specs[v] = &kubeconfigSpec{
 			CACert:     caCert,
 			APIServer:  o.InternalEndpoint,
-			ClientName: fmt.Sprintf("%s:%s", "system:node", "iz2ze0eeufai4d1d8oggpmz"),
+			ClientName: fmt.Sprintf("system:node:%s", v),
 			ClientCertAuth: &clientCertAuth{
 				CAKey:         caKey,
 				Organizations: []string{constants.NodesGroup},
 			},
-		},
+		}
 	}
+
+	return specs
 }
 
 func buildKubeconfigFromSpec(spec *kubeconfigSpec, clusterName string) ([]byte, error) {

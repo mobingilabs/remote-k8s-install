@@ -16,14 +16,13 @@ const (
 	KubeAPIServer         = "kube-apiserver"
 	KubeControllerManager = "kube-controller-manager"
 	KubeScheduler         = "kube-scheduler"
+
+	etcdClusterToken = "token"
 )
 
 type Options struct {
-	IP        string
-	NodeName  string
-	EtcdToken string
-	// ohter two master's info, k is name,v is IP
-	Companions map[string]string
+	// now it's machine's private ip
+	IPs []string
 
 	EtcdImage              string
 	APIServerImage         string
@@ -33,53 +32,84 @@ type Options struct {
 	ServiceIPRange string
 }
 
-// GetStaticPodMainfests create etcd,apiserver,controller-manager,scheduler staticPod files
-func NewStaticPodManifests(o Options) map[string][]byte {
-	pods := map[string]*v1.Pod{
-		Etcd:                  getEtcdPod(o.EtcdImage, o.createEtcdArguments()),
-		KubeAPIServer:         getAPIServerPod(o.APIServerImage, o.createAPIServerArguments()),
-		KubeControllerManager: getControllerManagerPod(o.ControllerManagerImage),
-		KubeScheduler:         getSchedulerPod(o.SchedulerImage),
+// NewStaticPodManifests will return etcds, apiservers, controllerManager, scheduler
+// these map key is private ip
+func NewStaticPodManifests(o Options) (map[string][]byte, map[string][]byte, []byte, []byte) {
+	etcdPods := make(map[string]*v1.Pod, len(o.IPs))
+	etcdArguments := o.createEtcdArguments()
+	for k, v := range etcdArguments {
+		etcdPods[k] = getEtcdPod(o.EtcdImage, v)
 	}
-	fillPods(pods)
-
-	mainfests := make(map[string][]byte, len(pods))
-	for k, v := range pods {
+	fillPods(etcdPods, Etcd)
+	etcdManifests := make(map[string][]byte, len(o.IPs))
+	for k, v := range etcdPods {
 		data := marshalToYAML(v)
-		mainfests[getFileName(k)] = data
+		etcdManifests[k] = data
 	}
 
-	return mainfests
+	apiServerPods := make(map[string]*v1.Pod, len(o.IPs))
+	apiServerArguments := o.createAPIServerArguments()
+	for k, v := range apiServerArguments {
+		apiServerPods[k] = getAPIServerPod(o.APIServerImage, v)
+	}
+	// TODO Etcd from external pkg constants
+	fillPods(apiServerPods, KubeAPIServer)
+	apiServerManifests := make(map[string][]byte, len(o.IPs))
+	for k, v := range etcdPods {
+		data := marshalToYAML(v)
+		apiServerManifests[k] = data
+	}
+
+	controllerManagerPod := map[string]*v1.Pod{
+		KubeControllerManager: getControllerManagerPod(o.ControllerManagerImage),
+	}
+	fillPods(controllerManagerPod, KubeControllerManager)
+
+	schedulerPod := map[string]*v1.Pod{
+		KubeScheduler: getSchedulerPod(o.SchedulerImage),
+	}
+	fillPods(schedulerPod, KubeScheduler)
+
+	return etcdManifests, apiServerManifests, marshalToYAML(controllerManagerPod[KubeControllerManager]), marshalToYAML(schedulerPod[KubeScheduler])
 }
 
-func (o Options) createEtcdArguments() map[string]string {
-	initialClusters := make([]string, 0, len(o.Companions)+1)
-	for k, v := range o.Companions {
-		initialClusters = append(initialClusters, fmt.Sprintf("%s=%s", k, getEtcdPeerURL(v)))
+func (o Options) createEtcdArguments() map[string]map[string]string {
+	data := make(map[string]map[string]string)
+	nameAndAddress := make([]string, 0, len(o.IPs))
+	for i, v := range o.IPs {
+		nameAndAddress = append(nameAndAddress, fmt.Sprintf("%s=%s", getNodeName(i), getEtcdPeerURL(v)))
 	}
-	initialClusters = append(initialClusters, fmt.Sprintf("%s=%s", o.NodeName, getEtcdPeerURL(o.IP)))
-	return map[string]string{
-		"name":                        o.NodeName,
-		"initial-advertise-peer-urls": getEtcdPeerURL(o.IP),
-		"listen-peer-urls":            getEtcdPeerURL(o.IP),
-		"listen-client-urls":          strings.Join([]string{getEtcdClientURL(o.IP), getEtcdClientURL("127.0.0.1")}, ","),
-		"advertise-client-urls":       getEtcdClientURL(o.IP),
-		"initial-cluster-token":       o.EtcdToken,
-		"initial-cluster":             strings.Join(initialClusters, ","),
+	for i, v := range o.IPs {
+		data[v] = map[string]string{
+			"name":                        getNodeName(i),
+			"initial-advertise-peer-urls": getEtcdPeerURL(v),
+			"listen-peer-urls":            getEtcdPeerURL(v),
+			"listen-client-urls":          strings.Join([]string{getEtcdClientURL(v), getEtcdClientURL("127.0.0.1")}, ","),
+			"advertise-client-urls":       getEtcdClientURL(v),
+			"initial-cluster-token":       etcdClusterToken,
+			"initial-cluster":             strings.Join(nameAndAddress, ","),
+		}
 	}
+
+	return data
 }
 
-func (o Options) createAPIServerArguments() map[string]string {
-	ips := make([]string, 0, len(o.Companions)+1)
-	ips = append(ips, getEtcdClientURL(o.IP))
-	for _, v := range o.Companions {
-		ips = append(ips, getEtcdClientURL(v))
+func (o Options) createAPIServerArguments() map[string]map[string]string {
+	etcdServers := make([]string, 0, len(o.IPs))
+	for _, v := range o.IPs {
+		etcdServers = append(etcdServers, getEtcdClientURL(v))
 	}
-	return map[string]string{
-		"advertise-address":        o.IP,
-		"etcd-servers":             strings.Join(ips, ","),
-		"service-cluster-ip-range": o.ServiceIPRange,
+
+	data := make(map[string]map[string]string, len(o.IPs))
+	for _, v := range o.IPs {
+		data[v] = map[string]string{
+			"advertise-address":        v,
+			"etcd-servers":             strings.Join(etcdServers, ","),
+			"service-cluster-ip-range": o.ServiceIPRange,
+		}
 	}
+
+	return data
 }
 
 func getEtcdPod(image string, arguments map[string]string) *v1.Pod {
@@ -163,18 +193,18 @@ func getSchedulerPod(image string) *v1.Pod {
 	}
 }
 
-func fillPods(pods map[string]*v1.Pod) {
-	for k, v := range pods {
+func fillPods(pods map[string]*v1.Pod, name string) {
+	for _, v := range pods {
 		v.APIVersion = v1.SchemeGroupVersion.String()
 		v.Kind = "Pod"
-		v.Name = k
+		v.Name = name
 		v.Namespace = "kube-system"
 		v.Labels = map[string]string{
-			"component": k,
+			"component": name,
 			"tier":      "control-plane",
 		}
 
-		v.Spec.Containers[0].Name = k
+		v.Spec.Containers[0].Name = name
 		v.Spec.Containers[0].ImagePullPolicy = v1.PullIfNotPresent
 		v.Spec.HostNetwork = true
 		v.Spec.PriorityClassName = "system-cluster-critical"
@@ -280,6 +310,6 @@ func getEtcdClientURL(ip string) string {
 	return fmt.Sprintf("http://%s:2379", ip)
 }
 
-func getFileName(name string) string {
-	return fmt.Sprintf("%s.%s", name, "yaml")
+func getNodeName(i int) string {
+	return fmt.Sprintf("node:%d", i)
 }

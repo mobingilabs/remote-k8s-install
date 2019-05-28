@@ -13,7 +13,6 @@ require (
 	github.com/gin-gonic/gin v1.3.0
 	github.com/go-openapi/spec v0.19.0 // indirect
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
-	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/gogo/protobuf v1.2.1 // indirect
 	github.com/golang/groupcache v0.0.0-20190129154638-5b532d6fd5ef // indirect
 	github.com/golang/protobuf v1.3.1
